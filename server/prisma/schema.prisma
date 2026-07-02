@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  bio       String?
+  website   String?
+  location  String?
+  theme     String   @default("dark")
+  language  String   @default("en")
+  emailNotifications Boolean @default(true)
+  pushNotifications  Boolean @default(false)
+  twoFactorEnabled   Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspaces      Workspace[] // Workspaces owned
+  workspaceMembers WorkspaceMember[]
+  assignedTasks   Task[]      @relation("AssignedTo")
+  createdTasks    Task[]      @relation("CreatedBy")
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects  Project[]
+  members   WorkspaceMember[]
+}
+
+model WorkspaceMember {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  role        String    @default("MEMBER") // ADMIN, MEMBER
+
+  @@unique([workspaceId, userId])
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tasks       Task[]
+  columns     BoardColumn[]
+}
+
+model BoardColumn {
+  id        String  @id @default(uuid())
+  name      String
+  order     Int
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+  tasks     Task[]
+}
+
+model Task {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  status      String   @default("TODO") // TODO, IN_PROGRESS, DONE (or linked to BoardColumn)
+  priority    String   @default("MEDIUM")
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  
+  columnId    String?
+  column      BoardColumn? @relation(fields: [columnId], references: [id])
+
+  assigneeId  String?
+  assignee    User?    @relation("AssignedTo", fields: [assigneeId], references: [id])
+  
+  createdById String
+  createdBy   User     @relation("CreatedBy", fields: [createdById], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
