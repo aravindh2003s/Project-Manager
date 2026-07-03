@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 import {
     FolderOpen, Trash2, Code2, Clock, CheckCircle,
     AlertCircle, FileArchive, RefreshCw, ChevronRight, CloudUpload
@@ -27,6 +28,7 @@ function formatDate(iso: string) {
 
 export default function UploadProject() {
     const navigate = useNavigate();
+    const token = useAuthStore(state => state.token);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [repos, setRepos] = useState<UploadedRepo[]>([]);
@@ -41,7 +43,9 @@ export default function UploadProject() {
     const fetchList = useCallback(async () => {
         setLoadingList(true);
         try {
-            const res = await fetch(`${API}/upload/list`);
+            const res = await fetch(`${API}/upload/list`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
             const data = await res.json();
             setRepos(Array.isArray(data) ? data : []);
         } catch {
@@ -74,6 +78,7 @@ export default function UploadProject() {
 
             const res = await fetch(`${API}/upload`, {
                 method: 'POST',
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
                 body: formData,
             });
 
@@ -113,7 +118,10 @@ export default function UploadProject() {
     const handleDelete = async (name: string) => {
         setDeletingName(name);
         try {
-            await fetch(`${API}/upload/${encodeURIComponent(name)}`, { method: 'DELETE' });
+            await fetch(`${API}/upload/${encodeURIComponent(name)}`, { 
+                method: 'DELETE',
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
             await fetchList();
         } catch {
             setError('Failed to delete project');

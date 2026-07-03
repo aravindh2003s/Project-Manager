@@ -8,14 +8,16 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('Seeding database...');
 
+    const { hashPassword } = require('./auth');
+    
     // Create a Demo User
     const user = await prisma.user.upsert({
         where: { email: 'demo@example.com' },
-        update: {},
+        update: { password: hashPassword('password') },
         create: {
             email: 'demo@example.com',
             name: 'Demo User',
-            password: 'hashed_password_here', // In real app, hash this!
+            password: hashPassword('password'), // Properly hashed now!
         },
     });
 

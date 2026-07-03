@@ -3,8 +3,10 @@ import multer from 'multer';
 import AdmZip from 'adm-zip';
 import fs from 'fs';
 import path from 'path';
+import { requireAuth, prisma } from '../auth';
 
 const router = Router();
+router.use(requireAuth);
 
 // ── Upload directory ─────────────────────────────────
 const UPLOADS_DIR = path.resolve(__dirname, '../../uploads');
@@ -89,6 +91,41 @@ router.post('/', upload.single('project'), async (req: Request, res: Response) =
         }
 
         const projectName = path.basename(projectDir);
+
+        // CREATE KANBAN PROJECT IN DATABASE
+        const user = res.locals.user;
+        if (user) {
+            // Find or create a default workspace for the user
+            let workspace = await prisma.workspace.findFirst({
+                where: { ownerId: user.id }
+            });
+            
+            if (!workspace) {
+                workspace = await prisma.workspace.create({
+                    data: {
+                        name: 'Personal Projects',
+                        ownerId: user.id,
+                        members: { create: { userId: user.id, role: 'ADMIN' } }
+                    }
+                });
+            }
+            
+            // Create the new Kanban project to show up on the Dashboard
+            await prisma.project.create({
+                data: {
+                    name: projectName,
+                    description: 'Imported from ZIP upload',
+                    workspaceId: workspace.id,
+                    columns: {
+                        create: [
+                            { name: 'To Do', order: 0 },
+                            { name: 'In Progress', order: 1 },
+                            { name: 'Done', order: 2 }
+                        ]
+                    }
+                }
+            });
+        }
 
         res.json({
             success: true,
