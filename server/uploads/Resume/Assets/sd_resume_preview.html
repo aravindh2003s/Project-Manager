@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aravindhan S – Software Developer Resume Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px;
+      min-height: 100vh;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .btn-print {
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      padding: 9px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-print:hover { background: #1558b0; }
+
+    /* ── Resume Card ── */
+    .resume {
+      background: #fff;
+      width: 100%;
+      max-width: 860px;
+      padding: 52px 60px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      border-radius: 6px;
+      color: #1a1a2e;
+      line-height: 1.7;
+    }
+
+    /* ── Header ── */
+    .header { text-align: center; margin-bottom: 25px; }
+    .header h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #2C3E6B;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+    }
+    .header .title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a73e8;
+      margin-top: 3px;
+      letter-spacing: 0.5px;
+    }
+    .header .contact {
+      font-size: 11px;
+      color: #555;
+      margin-top: 10px;
+    }
+    .header .contact a { color: #1a73e8; text-decoration: none; }
+    .header .contact a:hover { text-decoration: underline; }
+
+    /* ── Section ── */
+    .section { margin-top: 35px; }
+    .section-heading {
+      font-size: 12px;
+      font-weight: 800;
+      color: #2C3E6B;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      border-bottom: 1.5px solid #2C3E6B;
+      padding-bottom: 6px;
+      margin-bottom: 15px;
+    }
+
+    /* ── Summary ── */
+    .summary p { font-size: 13px; color: #333; line-height: 1.8; }
+
+    /* ── Core Skills (inline) ── */
+    .skills-inline {
+      font-size: 13px;
+      color: #333;
+      line-height: 1.8;
+    }
+    .skills-inline span.label {
+      font-weight: 700;
+      color: #2C3E6B;
+    }
+
+    /* ── Job ── */
+    .job { margin-bottom: 2px; }
+    .job-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
+    .job-title { font-size: 15px; font-weight: 700; color: #2C3E6B; }
+    .job-meta { font-size: 13px; color: #666; font-style: italic; }
+
+    /* ── Bullets ── */
+    ul.bullets { list-style: none; padding: 0; margin-top: 4px; }
+    ul.bullets li {
+      font-size: 13px;
+      color: #333;
+      padding-left: 14px;
+      position: relative;
+      margin-bottom: 8px;
+      line-height: 1.6;
+    }
+    ul.bullets li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: #1a73e8;
+      font-size: 10px;
+      top: 1px;
+    }
+
+    /* ── Skills ── */
+    .skill-row { display: flex; margin-bottom: 10px; font-size: 13px; }
+    .skill-label { font-weight: 700; color: #2C3E6B; min-width: 100px; flex-shrink: 0; }
+    .skill-value { color: #333; }
+
+    /* ── Project ── */
+    .project-title { font-size: 15px; font-weight: 700; color: #2C3E6B; margin-top: 18px; margin-bottom: 6px; }
+
+    /* ── Education ── */
+    .edu-entry { margin-bottom: 10px; }
+    .edu-inst { font-size: 12.5px; font-weight: 700; color: #1a1a2e; }
+    .edu-deg  { font-size: 12px; color: #333; }
+    .edu-period { font-size: 11.5px; color: #777; font-style: italic; }
+
+    /* ── Print ── */
+    @page { margin: 0; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .toolbar { display: none; }
+      .resume { box-shadow: none; border-radius: 0; padding: 30px 40px; max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button class="btn-print" onclick="window.print()">🖨 Print / Save as PDF</button>
+</div>
+
+<div class="resume">
+
+  <!-- ── HEADER ── -->
+  <div class="header">
+    <h1>Aravindhan S</h1>
+    <div class="title">Frontend Developer (React | TypeScript | JavaScript)</div>
+    <div class="contact">
+      <a href="mailto:aravindh2003s@gmail.com" target="_blank" rel="noopener noreferrer">aravindh2003s@gmail.com</a> &nbsp;|&nbsp; +91 88385 44167 &nbsp;|&nbsp;
+      <a href="https://linkedin.com/in/aravindhan-s-37254b2a2" target="_blank" rel="noopener noreferrer">linkedin.com/in/aravindhan-s-37254b2a2</a>
+      &nbsp;|&nbsp;
+      <a href="https://github.com/aravindh2003s" target="_blank" rel="noopener noreferrer">github.com/aravindh2003s</a>
+    </div>
+  </div>
+
+  <!-- ── PROFESSIONAL SUMMARY ── -->
+  <div class="section summary">
+    <div class="section-heading">Professional Summary</div>
+    <p>
+      Frontend Developer with hands-on experience building responsive, scalable web applications using React, TypeScript, JavaScript, HTML and CSS.
+      Strong understanding of UI architecture, REST API integration and component-based development.
+      Experienced working in Agile teams, CI/CD environments and UI automation testing.
+      Passionate about creating clean, user-friendly interfaces and writing maintainable code.
+    </p>
+  </div>
+
+  <!-- ── TECH STACK ── -->
+  <div class="section">
+    <div class="section-heading">Tech Stack</div>
+    <div class="skill-row"><span class="skill-label">Frontend</span><span class="skill-value">React.js, JavaScript (ES6+), TypeScript, HTML5, CSS3, Responsive Design</span></div>
+    <div class="skill-row"><span class="skill-label">Backend</span><span class="skill-value">FastAPI, Node.js, Express.js, REST APIs</span></div>
+    <div class="skill-row"><span class="skill-label">Database</span><span class="skill-value">MySQL, MongoDB</span></div>
+    <div class="skill-row"><span class="skill-label">Testing</span><span class="skill-value">Playwright, Selenium, Cucumber</span></div>
+    <div class="skill-row"><span class="skill-label">Tools</span><span class="skill-value">Git, GitHub, CI/CD, Agile/Scrum</span></div>
+  </div>
+
+  <!-- ── CORE FRONTEND SKILLS (compact inline) ── -->
+  <div class="section">
+    <div class="section-heading">Core Frontend Skills</div>
+    <div class="skills-inline">
+      Component-Based Architecture &amp; Reusable UI &nbsp;•&nbsp;
+      State Management (Context API) &nbsp;•&nbsp;
+      Cross-Browser Compatibility &nbsp;•&nbsp;
+      API Integration &amp; Async Data Handling &nbsp;•&nbsp;
+      Performance Optimization &nbsp;•&nbsp;
+      Mobile-First Responsive Design
+    </div>
+  </div>
+
+  <!-- ── EXPERIENCE ── -->
+  <div class="section">
+    <div class="section-heading">Experience</div>
+    <div class="job">
+      <div class="job-header">
+        <span class="job-title">Automation Tester Intern — Larsen &amp; Toubro, Chennai</span>
+        <span class="job-meta">Feb 2025 – May 2025</span>
+      </div>
+      <ul class="bullets">
+        <li>Developed automated UI test scripts using Playwright + TypeScript for critical user workflows</li>
+        <li>Built reusable automation framework using Cucumber BDD, improving test maintainability</li>
+        <li>Collaborated with developers to identify UI issues early and improve product quality</li>
+        <li>Integrated automated testing into CI/CD pipelines, reducing manual testing effort by 40%</li>
+        <li>Performed cross-browser testing to ensure consistent UI behavior</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── PROJECTS ── -->
+  <div class="section">
+    <div class="section-heading">Projects</div>
+
+    <div class="project-title">E-Commerce Custom T-Shirt Platform (React)</div>
+    <ul class="bullets">
+      <li>Developed product browsing, cart and checkout experience</li>
+      <li>Built dynamic product customization interface</li>
+      <li>Focused on UX, responsiveness and performance optimization</li>
+    </ul>
+
+    <div class="project-title">Employee Management System (React + FastAPI + MySQL)</div>
+    <ul class="bullets">
+      <li>Built CRUD dashboard UI to manage employee records</li>
+      <li>Implemented form validation and API error handling</li>
+    </ul>
+
+    <div class="project-title">Portfolio Website (React)</div>
+    <ul class="bullets">
+      <li>Built responsive portfolio with authentication and dynamic project display</li>
+    </ul>
+  </div>
+
+  <!-- ── EDUCATION ── -->
+  <div class="section">
+    <div class="section-heading">Education</div>
+
+    <div class="edu-entry">
+      <div class="edu-inst">Sri Venkateshwaraa College of Engineering and Technology</div>
+      <div class="edu-deg">B.Tech – Computer Science and Engineering</div>
+      <div class="edu-period">2021 – 2025</div>
+    </div>
+
+    <div class="edu-entry">
+      <div class="edu-inst">Jawahar Higher Secondary School</div>
+      <div class="edu-deg">Class XII – Higher Secondary</div>
+      <div class="edu-period">2020 – 2021</div>
+    </div>
+
+    <div class="edu-entry">
+      <div class="edu-inst">Jawahar Higher Secondary School</div>
+      <div class="edu-deg">Class XI – Secondary School</div>
+      <div class="edu-period">2018 – 2019</div>
+    </div>
+  </div>
+
+</div><!-- /resume -->
+
+</body>
+</html>

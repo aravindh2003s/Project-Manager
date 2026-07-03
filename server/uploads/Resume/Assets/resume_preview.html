@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aravindhan S – Resume Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px;
+      min-height: 100vh;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .toolbar h2 { font-size: 14px; color: #555; font-weight: 500; }
+    .btn-print {
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      padding: 9px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-print:hover { background: #1558b0; }
+
+    /* ── Resume Card ── */
+    .resume {
+      background: #fff;
+      width: 100%;
+      max-width: 860px;
+      padding: 52px 60px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      border-radius: 6px;
+      color: #1a1a2e;
+      line-height: 1.55;
+    }
+
+    /* ── Header ── */
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #2C3E6B;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .header .title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1a73e8;
+      margin-top: 5px;
+      letter-spacing: 0.5px;
+    }
+    .header .contact {
+      font-size: 11px;
+      color: #555;
+      margin-top: 6px;
+    }
+    .header .contact a { color: #1a73e8; text-decoration: none; }
+    .header .contact a:hover { text-decoration: underline; }
+
+    /* ── Section ── */
+    .section { margin-top: 18px; }
+    .section-heading {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #2C3E6B;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      border-bottom: 2px solid #2C3E6B;
+      padding-bottom: 4px;
+      margin-bottom: 10px;
+    }
+
+    /* ── Summary ── */
+    .summary p { font-size: 11px; color: #333; line-height: 1.7; }
+
+    /* ── Job ── */
+    .job { margin-bottom: 4px; }
+    .job-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
+    .job-title { font-size: 12px; font-weight: 700; color: #2C3E6B; }
+    .job-meta { font-size: 10.5px; color: #666; font-style: italic; }
+
+    /* ── Bullets ── */
+    ul.bullets { list-style: none; padding: 0; margin-top: 6px; }
+    ul.bullets li {
+      font-size: 11px;
+      color: #333;
+      padding-left: 14px;
+      position: relative;
+      margin-bottom: 3px;
+      line-height: 1.6;
+    }
+    ul.bullets li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: #1a73e8;
+      font-size: 10px;
+      top: 1px;
+    }
+
+    /* ── Skills ── */
+    .skill-row { display: flex; margin-bottom: 5px; font-size: 11px; }
+    .skill-label { font-weight: 700; color: #2C3E6B; min-width: 170px; flex-shrink: 0; }
+    .skill-value { color: #333; }
+
+    /* ── Project ── */
+    .project-title { font-size: 12px; font-weight: 700; color: #2C3E6B; margin-top: 10px; margin-bottom: 4px; }
+
+    /* ── Certifications ── */
+    .cert-item { font-size: 11px; color: #333; padding-left: 14px; position: relative; margin-bottom: 3px; }
+    .cert-item::before { content: '▸'; position: absolute; left: 0; color: #1a73e8; font-size: 10px; top: 1px; }
+
+    /* ── Education ── */
+    .edu-entry { margin-bottom: 10px; }
+    .edu-inst { font-size: 11.5px; font-weight: 700; color: #1a1a2e; }
+    .edu-deg  { font-size: 11px; color: #333; }
+    .edu-period { font-size: 10.5px; color: #777; font-style: italic; }
+
+    /* ── Print ── */
+    @media print {
+      body { background: #fff; padding: 0; }
+      .toolbar { display: none; }
+      .resume { box-shadow: none; border-radius: 0; padding: 30px 40px; max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h2>📄 Resume Preview — Aravindhan S</h2>
+  <button class="btn-print" onclick="window.print()">🖨 Print / Save as PDF</button>
+</div>
+
+<div class="resume">
+
+  <!-- ── HEADER ── -->
+  <div class="header">
+    <h1>Aravindhan S</h1>
+    <div class="title">QA Automation Engineer &nbsp;|&nbsp; Selenium &nbsp;|&nbsp; Playwright &nbsp;|&nbsp; TOSCA (Learning)</div>
+    <div class="contact">
+      <a href="mailto:aravindh2003s@gmail.com" target="_blank" rel="noopener noreferrer">aravindh2003s@gmail.com</a> &nbsp;|&nbsp; 8838544167 &nbsp;|&nbsp;
+      <a href="https://linkedin.com/in/aravindhan-s-37254b2a2" target="_blank" rel="noopener noreferrer">linkedin.com/in/aravindhan-s-37254b2a2</a>
+      &nbsp;|&nbsp;
+      <a href="https://github.com/aravindh2003s" target="_blank" rel="noopener noreferrer">github.com/aravindh2003s</a>
+    </div>
+  </div>
+
+  <!-- ── PROFESSIONAL SUMMARY ── -->
+  <div class="section summary">
+    <div class="section-heading">Professional Summary</div>
+    <p>
+      QA Automation Engineer with hands-on experience in building and executing automated test frameworks using
+      Selenium, Playwright, TypeScript, and Java. Experienced in test planning, test design, execution, and reporting
+      in Agile environments. Currently upskilling in Tricentis TOSCA and model-based test automation. Strong in API
+      testing, CI/CD integration, and defect analysis. Passionate about delivering high-quality software and improving
+      test efficiency.
+    </p>
+  </div>
+
+  <!-- ── WORK EXPERIENCE ── -->
+  <div class="section">
+    <div class="section-heading">Work Experience</div>
+    <div class="job">
+      <div class="job-header">
+        <span class="job-title">Automation Test Engineer Intern</span>
+        <span class="job-meta">02/2025 – 05/2025</span>
+      </div>
+      <div class="job-meta">Larsen &amp; Toubro &nbsp;|&nbsp; Chennai</div>
+      <ul class="bullets">
+        <li>Designed and executed automated test scripts for web applications using Playwright and Selenium</li>
+        <li>Participated in test planning, test design, and test execution across multiple sprint cycles</li>
+        <li>Generated and published automation test reports for stakeholder review</li>
+        <li>Performed failure analysis and defect reporting using structured incident management practices</li>
+        <li>Integrated automated tests into CI/CD pipeline, reducing manual testing effort by 40%</li>
+        <li>Worked in Agile/Scrum environment; participated in sprint planning, standups, and retrospectives</li>
+        <li>Gained exposure to model-based testing concepts aligned with Tricentis TOSCA methodology</li>
+        <li>Built reusable automation frameworks with Cucumber BDD, enhancing test maintainability</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── TECHNICAL SKILLS ── -->
+  <div class="section">
+    <div class="section-heading">Technical Skills</div>
+    <div class="skill-row"><span class="skill-label">Automation Testing</span><span class="skill-value">Selenium WebDriver, Playwright, Cucumber BDD, Tricentis TOSCA (Learning)</span></div>
+    <div class="skill-row"><span class="skill-label">Testing Activities</span><span class="skill-value">Test Planning, Test Design, Test Execution, Test Reporting, Failure Analysis, Defect Tracking, Incident Management</span></div>
+    <div class="skill-row"><span class="skill-label">API Testing</span><span class="skill-value">REST API Testing, Postman</span></div>
+    <div class="skill-row"><span class="skill-label">Programming</span><span class="skill-value">Java (Core Java), TypeScript, JavaScript</span></div>
+    <div class="skill-row"><span class="skill-label">Frontend</span><span class="skill-value">HTML, CSS</span></div>
+    <div class="skill-row"><span class="skill-label">Backend / Database</span><span class="skill-value">FastAPI, REST APIs, SQL (MySQL)</span></div>
+    <div class="skill-row"><span class="skill-label">Tools &amp; Practices</span><span class="skill-value">CI/CD Pipelines, Git/GitHub, Agile/Scrum, SDLC</span></div>
+  </div>
+
+  <!-- ── CERTIFICATIONS ── -->
+  <div class="section">
+    <div class="section-heading">Certifications</div>
+    <div class="cert-item">Tricentis TOSCA Automation – <strong>In Progress (2026)</strong></div>
+  </div>
+
+  <!-- ── PROJECTS ── -->
+  <div class="section">
+    <div class="section-heading">Projects</div>
+
+    <div class="project-title">Web Application Automation Framework</div>
+    <ul class="bullets">
+      <li>Designed automated test scripts for UI workflows using Playwright and Selenium WebDriver</li>
+      <li>Executed regression and smoke test suites across multiple environments</li>
+      <li>Generated automation test execution reports documenting pass/fail rates and defect trends</li>
+    </ul>
+
+    <div class="project-title">E-Commerce Application Automation Testing</div>
+    <ul class="bullets">
+      <li>Automated checkout, payment, and cart workflows for a full-stack e-commerce platform</li>
+      <li>Performed defect reporting and failure analysis on identified test failures</li>
+      <li>Executed cross-browser test automation to ensure compatibility across browsers</li>
+    </ul>
+
+    <div class="project-title">Employee Management System – Automation Testing</div>
+    <ul class="bullets">
+      <li>Created test scenarios and automated test cases for CRUD operations on employee records</li>
+      <li>Performed database validation using SQL and API testing using Postman</li>
+      <li>Integrated test suite into CI/CD pipeline for continuous quality assurance</li>
+    </ul>
+
+    <div class="project-title">Indoor Positioning System – AI &amp; IoT Based</div>
+    <ul class="bullets">
+      <li>AI-based solution to detect and track indoor objects</li>
+      <li>Implemented ML algorithms for enhanced tracking and navigation accuracy</li>
+    </ul>
+  </div>
+
+  <!-- ── EDUCATION ── -->
+  <div class="section">
+    <div class="section-heading">Education</div>
+
+    <div class="edu-entry">
+      <div class="edu-inst">Sri Venkateshwaraa College of Engineering and Technology</div>
+      <div class="edu-deg">Bachelor of Technology – Computer Science and Engineering</div>
+      <div class="edu-period">2021 – 2025 &nbsp;|&nbsp; Puducherry, India</div>
+    </div>
+
+    <div class="edu-entry">
+      <div class="edu-inst">Jawahar Higher Secondary School</div>
+      <div class="edu-deg">Class XII (Senior Secondary)</div>
+      <div class="edu-period">2020 – 2021 &nbsp;|&nbsp; Puducherry, India</div>
+    </div>
+
+    <div class="edu-entry">
+      <div class="edu-inst">Jawahar Higher Secondary School</div>
+      <div class="edu-deg">Class X (Secondary School)</div>
+      <div class="edu-period">2018 – 2019 &nbsp;|&nbsp; Puducherry, India</div>
+    </div>
+  </div>
+
+</div><!-- /resume -->
+
+</body>
+</html>
