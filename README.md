@@ -1,4 +1,4 @@
-# 🚀 Antigravity Project Management System (PMS)
+# 🚀 Project Management System (PMS)
 
 ![React](https://img.shields.io/badge/-React-61DAFB?style=flat-square&logo=react&logoColor=black)
 ![Node.js](https://img.shields.io/badge/-Node.js-339933?style=flat-square&logo=node.js&logoColor=white)
