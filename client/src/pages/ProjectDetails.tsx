@@ -10,6 +10,9 @@ import {
 import { DndContext, type DragEndEvent, closestCorners, useSensor, useSensors, PointerSensor, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { apiFetch } from '../api/http';
+import { DiffViewer } from '../components/DiffViewer';
+import './ProjectDetails.css';
 
 const PRIORITY_MAP: Record<string, { label: string; className: string }> = {
     HIGH:   { label: 'High',   className: 'priority-high' },
@@ -31,7 +34,8 @@ function ProjectDetails() {
         updateTask, deleteTask,
         taskFilter, taskPriorityFilter, searchQuery,
         setTaskFilter, setTaskPriorityFilter, setSearchQuery,
-        getFilteredTasks, getStats
+        getFilteredTasks, getStats,
+        initSocket, disconnectSocket
     } = useProjectStore();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,13 +44,46 @@ function ProjectDetails() {
     const [newTaskDesc, setNewTaskDesc] = useState('');
     const [newTaskPriority, setNewTaskPriority] = useState('MEDIUM');
     const [activeTab, setActiveTab] = useState('board');
+    const [availableCommits, setAvailableCommits] = useState<any[]>([]);
+    const [editTaskCommitOids, setEditTaskCommitOids] = useState<string[]>([]);
+    
+    // Diff Viewer State
+    const [viewingDiffOid, setViewingDiffOid] = useState<string | null>(null);
+    const [diffPatch, setDiffPatch] = useState<string>('');
+
+    useEffect(() => {
+        if (editTask && currentProject) {
+            setEditTaskCommitOids(editTask.commitOids ? editTask.commitOids.split(',').filter(Boolean) : []);
+            
+            const fetchCommits = async () => {
+                try {
+                    const res = await fetch(`/api/git/commits?repo=${encodeURIComponent(currentProject.name)}`, {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setAvailableCommits(data);
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            };
+            fetchCommits();
+        }
+    }, [editTask, currentProject]);
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
     useEffect(() => {
-        if (projectId) fetchProjectById(projectId);
-        return () => { setSearchQuery(''); };
-    }, [projectId, fetchProjectById, setSearchQuery]);
+        if (projectId) {
+            fetchProjectById(projectId);
+            initSocket(projectId);
+        }
+        return () => { 
+            setSearchQuery('');
+            disconnectSocket();
+        };
+    }, [projectId, fetchProjectById, setSearchQuery, initSocket, disconnectSocket]);
 
     const handleCreateTask = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -59,11 +96,30 @@ function ProjectDetails() {
     const handleEditSave = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editTask || !projectId) return;
-        await updateTask(projectId, editTask.id, {
-            title: editTask.title, description: editTask.description,
-            priority: editTask.priority, status: editTask.status,
+        const commitOidsStr = editTaskCommitOids.length > 0 ? editTaskCommitOids.join(',') : null;
+        
+        await updateTask(projectId, editTask.id, { 
+            ...editTask, 
+            commitOids: commitOidsStr 
         });
         setEditTask(null);
+    };
+
+    const handleViewDiff = async (e: React.MouseEvent, oid: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!currentProject) return;
+        try {
+            const res = await apiFetch<{ patch: string }>(`/git/diff?repo=${currentProject.name}&oid=${oid}`);
+            setDiffPatch(res.patch || '');
+            setViewingDiffOid(oid);
+        } catch (err) {
+            console.error('Failed to fetch diff', err);
+        }
+    };
+
+    const toggleCommit = (oid: string) => {
+        setEditTaskCommitOids(prev => prev.includes(oid) ? prev.filter(c => c !== oid) : [...prev, oid]);
     };
 
     const handleDragEnd = async (event: DragEndEvent) => {
@@ -112,7 +168,12 @@ function ProjectDetails() {
                 </div>
                 <div className="pd-title-row">
                     <div>
-                        <h1 className="pd-title">{currentProject.name}</h1>
+                        <h1 className="pd-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {currentProject.name}
+                            <span className="live-badge" title="Live Collaboration Active">
+                                <span className="live-dot"></span> Live
+                            </span>
+                        </h1>
                         {currentProject.description && <p className="pd-subtitle">{currentProject.description}</p>}
                     </div>
                     <button className="btn btn-primary" id="newItemBtn" title="Create new issue" onClick={() => setIsModalOpen(true)}>
@@ -334,6 +395,30 @@ function ProjectDetails() {
                                     </select>
                                 </div>
                             </div>
+                            {availableCommits.length > 0 && (
+                                <div className="modal-commits-section">
+                                    <label className="form-label">Link Commits (DevOps Traceability)</label>
+                                    <div className="commits-selector">
+                                        {availableCommits.map(c => (
+                                            <div key={c.oid} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <label className="commit-checkbox-item" style={{ flex: 1, margin: 0 }}>
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={editTaskCommitOids.includes(c.oid)}
+                                                        onChange={() => toggleCommit(c.oid)}
+                                                    />
+                                                    <GitCommit size={14} className="color-muted" />
+                                                    <span className="commit-message-short">{c.message.split('\n')[0]}</span>
+                                                    <span className="commit-hash-short">{c.oid.substring(0, 7)}</span>
+                                                </label>
+                                                <button type="button" className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: '11px' }} onClick={(e) => handleViewDiff(e, c.oid)}>
+                                                    View Code
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                             <div className="modal-actions">
                                 <button type="button" className="btn" onClick={() => setEditTask(null)}>Cancel</button>
                                 <button type="submit" className="btn btn-primary">Save Changes</button>
@@ -341,6 +426,13 @@ function ProjectDetails() {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {viewingDiffOid && (
+                <DiffViewer 
+                    patch={diffPatch} 
+                    onClose={() => setViewingDiffOid(null)} 
+                />
             )}
         </div>
     );
@@ -414,8 +506,16 @@ function SortableTask({ task, onEdit, onDelete }: { task: Task, onEdit: (t: Task
                 </span>
             </div>
             {task.description && <p className="task-desc">{task.description}</p>}
+            
             <div className="task-footer">
-                <span className="task-id text-muted">#{task.id?.slice(0,6)}</span>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span className="task-id text-muted">#{task.id?.slice(0,6)}</span>
+                    {task.commitOids && task.commitOids.length > 0 && (
+                        <span className="task-commits-badge" title="Linked Commits">
+                            <GitCommit size={11} /> {task.commitOids.split(',').filter(Boolean).length}
+                        </span>
+                    )}
+                </div>
                 <div className="task-actions">
                     <button className="icon-action-btn" title="Edit task" onPointerDown={e => e.stopPropagation()} onClick={() => onEdit(task)}><Edit3 size={12} /></button>
                     <button className="icon-action-btn danger" title="Delete task" onPointerDown={e => e.stopPropagation()} onClick={() => onDelete(task.id)}><Trash2 size={12} /></button>

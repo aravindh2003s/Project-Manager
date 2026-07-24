@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjectStore } from '../store/projectStore';
+import { useAuthStore } from '../store/authStore';
 import { Plus, TrendingUp, CheckCircle, Clock, Circle, Search, X, Folder } from 'lucide-react';
+import './Dashboard.css';
 
 function Dashboard() {
     const { projects, loading, fetchProjects, createProject, error } = useProjectStore();
+    const user = useAuthStore(state => state.user);
     const [showModal, setShowModal] = useState(false);
     const [newName, setNewName] = useState('');
     const [newDesc, setNewDesc] = useState('');
@@ -34,7 +37,7 @@ function Dashboard() {
             <div className="dash-header">
                 <div>
                     <h1 className="dash-title">Dashboard</h1>
-                    <p className="dash-subtitle">Welcome back, Demo User — here's your workspace overview.</p>
+                    <p className="dash-subtitle">Welcome back, {user?.name || 'User'} — here's your workspace overview.</p>
                 </div>
                 <button className="btn btn-primary" id="newProjectBtn" title="Create new project" onClick={() => setShowModal(true)}>
                     <Plus size={16} /> New Project

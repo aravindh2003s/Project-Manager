@@ -6,10 +6,10 @@ test.describe('App basic flows', () => {
     await page.goto('/');
     
     // Check main title (updated to match current UI)
-    await expect(page.locator('h1')).toHaveText('Project operations for teams that need clarity, not clutter.');
+    await expect(page.locator('h1')).toHaveText('Operations for teams that need clarity, not clutter.');
     
-    // Check 'Open Workspace' button
-    const getStartedBtn = page.locator('a', { hasText: 'Open Workspace' });
+    // Check 'Get Started Free' button
+    const getStartedBtn = page.locator('a', { hasText: 'Get Started Free' });
     await expect(getStartedBtn).toBeVisible();
     await expect(getStartedBtn).toHaveAttribute('href', '/login');
     

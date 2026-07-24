@@ -1,0 +1,172 @@
+/* ProjectDetails & Kanban Glassmorphism */
+/* Modal Commits Section */
+.modal-commits-section {
+  margin-top: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.commits-selector {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.commit-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #c9d1d9;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.commit-checkbox-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.commit-checkbox-item input {
+  accent-color: #58a6ff;
+}
+
+.commit-message-short {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.commit-hash-short {
+  font-family: 'Fira Code', monospace;
+  color: #8b949e;
+  font-size: 11px;
+}
+
+/* Task Card Commits Badge */
+.task-commits-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  background: rgba(88, 166, 255, 0.15);
+  color: #58a6ff;
+  padding: 2px 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(88, 166, 255, 0.3);
+}
+
+/* Live Collaboration Badge */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(63, 185, 80, 0.15);
+  color: #3fb950;
+  padding: 4px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(63, 185, 80, 0.3);
+  margin-left: 8px;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #3fb950;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #3fb950;
+  animation: pulse-live 1.5s infinite;
+}
+
+@keyframes pulse-live {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 4px rgba(63, 185, 80, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(63, 185, 80, 0); }
+}
+
+/* Utilities */
+.color-muted { color: #8b949e; }
+
+.pd-container {
+  position: relative;
+  z-index: 1;
+}
+
+.pd-header {
+  background: rgba(20, 20, 25, 0.45) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.pd-filterbar {
+  background: rgba(20, 20, 25, 0.3) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.pd-filterbar-search, .pd-filter-chip {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.board-col {
+  background: rgba(20, 20, 25, 0.25) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.task-card {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s !important;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+.task-card-dragging {
+  background: rgba(30, 30, 35, 0.8) !important;
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+  transform: scale(1.05) rotate(2deg) !important;
+}
+
+.list-view, .sprint-card {
+  background: rgba(20, 20, 25, 0.45) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.list-header-row {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.list-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+.list-row:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+}

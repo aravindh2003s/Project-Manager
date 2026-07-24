@@ -148,6 +148,7 @@
     "side-channel-map": "^1.0.1",
     "side-channel-weakmap": "^1.0.2",
     "signal-exit": "^4.1.0",
+    "socket.io": "^4.8.3",
     "sqlstring": "^2.3.3",
     "statuses": "^2.0.2",
     "std-env": "^3.10.0",
@@ -165,5 +166,8 @@
     "wrappy": "^1.0.2",
     "yn": "^3.1.1",
     "zeptomatch": "^2.1.0"
+  },
+  "devDependencies": {
+    "@prisma/engines": "^7.9.0"
   }
 }

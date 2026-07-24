@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
     ReactFlow, Background, Controls, MiniMap,
     addEdge, useNodesState, useEdgesState, Handle, Position,
@@ -8,8 +8,10 @@ import {
 import '@xyflow/react/dist/style.css';
 import {
     Play, TestTube2, Package, Cloud, Shield, Database,
-    Bell, Code2, Download, Copy, Check, Plus, Trash2, Zap, X
+    Bell, Code2, Download, Copy, Check, Plus, Trash2, Zap, X, Save
 } from 'lucide-react';
+import { useProjectStore } from '../store/projectStore';
+import './PipelineBuilder.css';
 
 // ── Node type definitions ────────────────────────────
 export type PipelineNodeType =
@@ -20,6 +22,7 @@ interface PipelineNodeData {
     label: string;
     type: PipelineNodeType;
     config: Record<string, string>;
+    executing?: boolean;
     [key: string]: unknown;
 }
 
@@ -38,30 +41,24 @@ const NODE_CONFIGS: Record<PipelineNodeType, {
     notify: { icon: <Bell size={14} />, color: '#78909c', bgColor: 'rgba(120,144,156,0.12)', defaultConfig: { channel: '#deployments', on: 'success,failure' }, description: 'Send Slack/Discord notification' },
 };
 
-// ── Custom Node Component ────────────────────────────
 function PipelineNode({ data, selected }: NodeProps) {
     const nodeData = data as PipelineNodeData;
     const config = NODE_CONFIGS[nodeData.type];
     if (!config) return null;
 
     return (
-        <div className={`pipeline-node ${selected ? 'pipeline-node-selected' : ''}`}
-            style={{ borderColor: config.color, background: config.bgColor }}>
-            <Handle type="target" position={Position.Top} className="pipeline-handle" />
-            <div className="pipeline-node-header" style={{ color: config.color }}>
-                {config.icon}
-                <span className="pipeline-node-label">{nodeData.label}</span>
+        <div className={`pipeline-node-azure ${selected ? 'selected' : ''} ${nodeData.executing ? 'executing' : ''}`} style={{ borderLeftColor: config.color }}>
+            <Handle type="target" position={Position.Left} className="pipeline-handle-azure" />
+            <div className="pipeline-node-azure-content">
+                <div className="pipeline-node-azure-icon" style={{ color: config.color }}>
+                    {config.icon}
+                </div>
+                <div className="pipeline-node-azure-text">
+                    <div className="pipeline-node-azure-title">{nodeData.label}</div>
+                    <div className="pipeline-node-azure-subtitle">{config.description}</div>
+                </div>
             </div>
-            <div className="pipeline-node-desc">{config.description}</div>
-            <div className="pipeline-node-config">
-                {Object.entries(nodeData.config).slice(0, 2).map(([k, v]) => (
-                    <div key={k} className="pipeline-config-row">
-                        <span className="pipeline-config-key">{k}:</span>
-                        <span className="pipeline-config-val" title={v}>{v}</span>
-                    </div>
-                ))}
-            </div>
-            <Handle type="source" position={Position.Bottom} className="pipeline-handle" />
+            <Handle type="source" position={Position.Right} className="pipeline-handle-azure" />
         </div>
     );
 }
@@ -210,15 +207,15 @@ const PALETTE_ITEMS: { type: PipelineNodeType; label: string }[] = [
 
 // ── Initial sample pipeline ──────────────────────────
 const INIT_NODES: Node[] = [
-    { id: '1', type: 'pipelineNode', position: { x: 300, y: 30 }, data: { label: 'Trigger', type: 'trigger', config: { on: 'push', branches: 'main, develop' } } },
-    { id: '2', type: 'pipelineNode', position: { x: 80, y: 180 }, data: { label: 'Lint', type: 'lint', config: { command: 'npm run lint', runs_on: 'ubuntu-latest' } } },
-    { id: '3', type: 'pipelineNode', position: { x: 320, y: 180 }, data: { label: 'Unit Tests', type: 'test', config: { command: 'npm test -- --coverage', runs_on: 'ubuntu-latest' } } },
-    { id: '4', type: 'pipelineNode', position: { x: 560, y: 180 }, data: { label: 'Security Scan', type: 'security', config: { scanner: 'snyk', fail_on: 'high' } } },
-    { id: '5', type: 'pipelineNode', position: { x: 300, y: 340 }, data: { label: 'Build', type: 'build', config: { command: 'npm run build', artifact: 'dist/' } } },
-    { id: '6', type: 'pipelineNode', position: { x: 120, y: 490 }, data: { label: 'Docker Build', type: 'docker', config: { image: 'nexus-app', tag: '${{ github.sha }}' } } },
-    { id: '7', type: 'pipelineNode', position: { x: 380, y: 490 }, data: { label: 'DB Migrate', type: 'database', config: { command: 'npx prisma migrate deploy', env: 'production' } } },
-    { id: '8', type: 'pipelineNode', position: { x: 250, y: 640 }, data: { label: 'Deploy to AWS', type: 'deploy', config: { target: 'AWS ECS', region: 'us-east-1', environment: 'production' } } },
-    { id: '9', type: 'pipelineNode', position: { x: 250, y: 790 }, data: { label: 'Notify Team', type: 'notify', config: { channel: '#deployments', on: 'success,failure' } } },
+    { id: '1', type: 'pipelineNode', position: { x: 50, y: 150 }, data: { label: 'Trigger', type: 'trigger', config: { on: 'push', branches: 'main, develop' } } },
+    { id: '2', type: 'pipelineNode', position: { x: 350, y: 50 }, data: { label: 'Lint', type: 'lint', config: { command: 'npm run lint', runs_on: 'ubuntu-latest' } } },
+    { id: '3', type: 'pipelineNode', position: { x: 350, y: 150 }, data: { label: 'Unit Tests', type: 'test', config: { command: 'npm test -- --coverage', runs_on: 'ubuntu-latest' } } },
+    { id: '4', type: 'pipelineNode', position: { x: 350, y: 250 }, data: { label: 'Security Scan', type: 'security', config: { scanner: 'snyk', fail_on: 'high' } } },
+    { id: '5', type: 'pipelineNode', position: { x: 650, y: 150 }, data: { label: 'Build', type: 'build', config: { command: 'npm run build', artifact: 'dist/' } } },
+    { id: '6', type: 'pipelineNode', position: { x: 950, y: 100 }, data: { label: 'Docker Build', type: 'docker', config: { image: 'nexus-app', tag: '${{ github.sha }}' } } },
+    { id: '7', type: 'pipelineNode', position: { x: 950, y: 200 }, data: { label: 'DB Migrate', type: 'database', config: { command: 'npx prisma migrate deploy', env: 'production' } } },
+    { id: '8', type: 'pipelineNode', position: { x: 1250, y: 150 }, data: { label: 'Deploy to AWS', type: 'deploy', config: { target: 'AWS ECS', region: 'us-east-1', environment: 'production' } } },
+    { id: '9', type: 'pipelineNode', position: { x: 1550, y: 150 }, data: { label: 'Notify Team', type: 'notify', config: { channel: '#deployments', on: 'success,failure' } } },
 ];
 
 const INIT_EDGES: Edge[] = [
@@ -245,6 +242,28 @@ export default function PipelineBuilder() {
     const [nodeCounter, setNodeCounter] = useState(INIT_NODES.length + 1);
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
+    const { projects, fetchProjects, savePipeline } = useProjectStore();
+    const [showSaveModal, setShowSaveModal] = useState(false);
+    const [selectedProjectId, setSelectedProjectId] = useState('');
+    const [pipelineName, setPipelineName] = useState('My Pipeline');
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Execution Simulation State
+    const [isExecuting, setIsExecuting] = useState(false);
+    const [showTerminal, setShowTerminal] = useState(false);
+    const [executionLogs, setExecutionLogs] = useState<React.ReactNode[]>([]);
+    const terminalBodyRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (projects.length === 0) fetchProjects();
+    }, [projects.length, fetchProjects]);
+
+    useEffect(() => {
+        if (terminalBodyRef.current) {
+            terminalBodyRef.current.scrollTop = terminalBodyRef.current.scrollHeight;
+        }
+    }, [executionLogs]);
+
     const onConnect = useCallback((params: Connection) => {
         setEdges(eds => addEdge({ ...params, type: 'smoothstep', animated: true }, eds));
     }, [setEdges]);
@@ -260,6 +279,26 @@ export default function PipelineBuilder() {
         };
         setNodes(nds => [...nds, newNode]);
         setNodeCounter(c => c + 1);
+    };
+
+    const selectedNode = nodes.find(n => n.selected);
+
+    const updateNodeConfig = (nodeId: string, key: string, value: string) => {
+        setNodes(nds => nds.map(n => {
+            if (n.id === nodeId) {
+                return {
+                    ...n,
+                    data: {
+                        ...n.data,
+                        config: {
+                            ...(n.data as PipelineNodeData).config,
+                            [key]: value
+                        }
+                    }
+                };
+            }
+            return n;
+        }));
     };
 
     const handleGenerateYaml = () => {
@@ -284,36 +323,80 @@ export default function PipelineBuilder() {
         URL.revokeObjectURL(url);
     };
 
-    return (
-        <div className="pipeline-layout">
-            {/* Left palette */}
-            <div className="pipeline-palette">
-                <div className="pipeline-palette-title">
-                    <Zap size={14} /> Pipeline Nodes
-                </div>
-                <div className="pipeline-palette-list">
-                    {PALETTE_ITEMS.map(item => {
-                        const cfg = NODE_CONFIGS[item.type];
-                        return (
-                            <button
-                                key={item.type}
-                                className="pipeline-palette-item"
-                                style={{ borderColor: cfg.color, background: cfg.bgColor, color: cfg.color }}
-                                onClick={() => addNode(item.type, item.label)}
-                                title={cfg.description}
-                            >
-                                {cfg.icon}
-                                <span>{item.label}</span>
-                                <Plus size={11} className="pipeline-palette-plus" />
-                            </button>
-                        );
-                    })}
-                </div>
-                <div className="pipeline-palette-hint">
-                    Drag nodes to rearrange. Connect by dragging from node handles.
-                </div>
-            </div>
+    const handleRunPipeline = async () => {
+        if (nodes.length === 0) return;
+        setIsExecuting(true);
+        setShowTerminal(true);
+        setExecutionLogs([<span key="init" className="log-info">[INFO] Initializing CI/CD pipeline simulation...</span>]);
+        
+        // Topo-sort mock: just execute from left to right (x position)
+        const runOrder = [...nodes].sort((a, b) => a.position.x - b.position.x);
+        
+        let logIndex = 0;
+        const addLog = (log: React.ReactNode) => setExecutionLogs(logs => [...logs, <div key={logIndex++} className="log-line">{log}</div>]);
 
+        for (const node of runOrder) {
+            // mark node as executing
+            setNodes(nds => nds.map(n => n.id === node.id ? { ...n, data: { ...n.data, executing: true } } : n));
+            const nodeData = node.data as PipelineNodeData;
+            addLog(<span className="log-info">[START] Executing task: {nodeData.label}...</span>);
+            
+            // simulate task execution delay
+            await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
+            
+            if (nodeData.type === 'lint') {
+                addLog(<span>Running eslint . --ext .js,.ts,.tsx</span>);
+                addLog(<span className="log-success">[OK] 0 errors, 0 warnings.</span>);
+            } else if (nodeData.type === 'test') {
+                addLog(<span>PASS  src/App.test.tsx</span>);
+                addLog(<span>PASS  src/utils.test.ts</span>);
+                addLog(<span className="log-success">[OK] Test suite passed.</span>);
+            } else if (nodeData.type === 'build') {
+                addLog(<span>Vite build started...</span>);
+                addLog(<span>Built 12 chunks.</span>);
+                addLog(<span className="log-success">[OK] build successful in 2.1s</span>);
+            } else if (nodeData.type === 'docker') {
+                addLog(<span>Building image {nodeData.config.image}:{nodeData.config.tag}...</span>);
+                addLog(<span className="log-success">[OK] Image pushed to registry.</span>);
+            } else if (nodeData.type === 'deploy') {
+                addLog(<span>Deploying to {nodeData.config.target} ({nodeData.config.region})...</span>);
+                addLog(<span className="log-success">[OK] Deployment successful!</span>);
+            } else if (nodeData.type === 'database') {
+                addLog(<span>Applying Prisma migrations...</span>);
+                addLog(<span className="log-success">[OK] Database up to date.</span>);
+            } else if (nodeData.type === 'notify') {
+                addLog(<span>Sending webhook to {nodeData.config.channel}...</span>);
+                addLog(<span className="log-success">[OK] Notification sent.</span>);
+            } else {
+                addLog(<span className="log-success">[OK] Completed {nodeData.label}.</span>);
+            }
+            
+            await new Promise(r => setTimeout(r, 500));
+            // mark node as done executing
+            setNodes(nds => nds.map(n => n.id === node.id ? { ...n, data: { ...n.data, executing: false } } : n));
+        }
+        
+        addLog(<span className="log-success">[INFO] Pipeline execution finished successfully!</span>);
+        setIsExecuting(false);
+    };
+
+    const handleSaveSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedProjectId) return;
+        setIsSaving(true);
+        try {
+            const flowState = JSON.stringify({ nodes, edges });
+            await savePipeline(selectedProjectId, { name: pipelineName, yaml, flowState });
+            setShowSaveModal(false);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <div className="pipeline-layout-azure">
             {/* Canvas */}
             <div className="pipeline-canvas-wrap" ref={reactFlowWrapper}>
                 <ReactFlow
@@ -326,29 +409,102 @@ export default function PipelineBuilder() {
                     fitView
                     fitViewOptions={{ padding: 0.2 }}
                     defaultEdgeOptions={{ type: 'smoothstep', animated: true }}
-                    style={{ background: 'var(--bg-primary)' }}
+                    style={{ background: 'rgba(10,10,15,0.7)' }}
                 >
-                    <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--border-subtle)" />
+                    <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="rgba(255,255,255,0.05)" />
                     <Controls className="pipeline-flow-controls" />
                     <MiniMap
-                        className="pipeline-minimap"
+                        className="pipeline-minimap-azure"
                         nodeColor={(n) => {
                             const d = n.data as PipelineNodeData;
                             return NODE_CONFIGS[d.type]?.color || '#8b949e';
                         }}
-                        maskColor="rgba(13,17,23,0.7)"
+                        maskColor="rgba(0,0,0,0.5)"
                     />
                     <Panel position="top-right">
                         <div className="pipeline-top-actions">
-                            <button className="btn" onClick={() => { setNodes([]); setEdges([]); }} title="Clear canvas">
+                            <button className="btn" onClick={() => { setNodes([]); setEdges([]); }} title="Clear canvas" disabled={isExecuting}>
                                 <Trash2 size={14} /> Clear
                             </button>
-                            <button className="btn btn-primary" onClick={handleGenerateYaml}>
-                                <Play size={14} /> Generate YAML
+                            <button className="btn btn-primary" onClick={handleGenerateYaml} disabled={isExecuting}>
+                                <Code2 size={14} /> Generate YAML
+                            </button>
+                            <button className="btn btn-primary" onClick={handleRunPipeline} disabled={isExecuting} style={{ background: '#3fb950', borderColor: '#3fb950' }}>
+                                <Play size={14} /> Run Pipeline
                             </button>
                         </div>
                     </Panel>
                 </ReactFlow>
+            </div>
+
+            {/* Right palette (Tasks Assistant or Node Properties) */}
+            <div className="pipeline-palette-azure">
+                {selectedNode ? (() => {
+                    const nodeData = selectedNode.data as PipelineNodeData;
+                    const config = NODE_CONFIGS[nodeData.type];
+                    return (
+                        <>
+                            <div className="pipeline-palette-title-azure">
+                                Properties
+                            </div>
+                            <div className="pipeline-properties-header">
+                                <div className="pipeline-properties-icon" style={{ color: config?.color }}>
+                                    {config?.icon}
+                                </div>
+                                <div className="pipeline-properties-title">
+                                    {nodeData.label}
+                                </div>
+                            </div>
+                            <div className="pipeline-properties-body">
+                                {Object.entries(nodeData.config).map(([k, v]) => (
+                                    <div key={k} className="pipeline-property-field">
+                                        <label className="pipeline-property-label">{k}</label>
+                                        <input 
+                                            type="text" 
+                                            className="pipeline-property-input" 
+                                            value={v as string} 
+                                            onChange={(e) => updateNodeConfig(selectedNode.id, k, e.target.value)} 
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="pipeline-properties-footer">
+                                <button className="btn pipeline-prop-done-btn" onClick={() => setNodes(nds => nds.map(n => ({...n, selected: false})))}>
+                                    Done
+                                </button>
+                            </div>
+                        </>
+                    );
+                })() : (
+                    <>
+                        <div className="pipeline-palette-title-azure">
+                            Tasks
+                        </div>
+                        <div className="pipeline-palette-search-azure">
+                            <input type="text" placeholder="Search tasks..." />
+                        </div>
+                        <div className="pipeline-palette-list-azure">
+                            {PALETTE_ITEMS.map(item => {
+                                const cfg = NODE_CONFIGS[item.type];
+                                return (
+                                    <button
+                                        key={item.type}
+                                        className="pipeline-palette-item-azure"
+                                        onClick={() => addNode(item.type, item.label)}
+                                        title={cfg.description}
+                                    >
+                                        <div className="palette-item-icon-azure" style={{ color: cfg.color }}>{cfg.icon}</div>
+                                        <div className="palette-item-text-azure">
+                                            <span className="palette-item-label">{item.label}</span>
+                                            <span className="palette-item-desc">{cfg.description}</span>
+                                        </div>
+                                        <Plus size={14} className="pipeline-palette-plus" />
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* YAML Panel */}
@@ -359,6 +515,9 @@ export default function PipelineBuilder() {
                             <Code2 size={14} /> pipeline.yml
                         </span>
                         <div className="pipeline-yaml-actions">
+                            <button className="repo-action-btn" onClick={() => setShowSaveModal(true)} title="Save to Project">
+                                <Save size={13} /> Save to Project
+                            </button>
                             <button className="repo-action-btn" onClick={handleCopy} title="Copy">
                                 {copied ? <Check size={13} className="repo-save-ok" /> : <Copy size={13} />}
                                 {copied ? 'Copied!' : 'Copy'}
@@ -372,6 +531,63 @@ export default function PipelineBuilder() {
                         </div>
                     </div>
                     <pre className="pipeline-yaml-content"><code>{yaml}</code></pre>
+                </div>
+            )}
+
+            {showSaveModal && (
+                <div className="modal-overlay" onClick={() => setShowSaveModal(false)}>
+                    <div className="card modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Save Pipeline</h3>
+                            <button className="modal-close btn" onClick={() => setShowSaveModal(false)}><X size={18} /></button>
+                        </div>
+                        <form onSubmit={handleSaveSubmit} className="modal-form">
+                            <label className="form-label">Pipeline Name</label>
+                            <input 
+                                required 
+                                className="modal-input" 
+                                value={pipelineName} 
+                                onChange={e => setPipelineName(e.target.value)} 
+                                placeholder="e.g. Production CI"
+                            />
+                            
+                            <label className="form-label" style={{ marginTop: '10px' }}>Target Project</label>
+                            <select 
+                                required 
+                                className="modal-input modal-select" 
+                                value={selectedProjectId} 
+                                onChange={e => setSelectedProjectId(e.target.value)}
+                            >
+                                <option value="" disabled>Select a project...</option>
+                                {projects.map(p => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                            </select>
+                            
+                            <div className="modal-actions" style={{ marginTop: '20px' }}>
+                                <button type="button" className="btn" onClick={() => setShowSaveModal(false)}>Cancel</button>
+                                <button type="submit" className="btn btn-primary" disabled={isSaving || !selectedProjectId}>
+                                    {isSaving ? 'Saving...' : 'Save Pipeline'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Terminal Drawer */}
+            {showTerminal && (
+                <div className="pipeline-terminal-drawer">
+                    <div className="pipeline-terminal-header">
+                        <span>Pipeline Execution Logs</span>
+                        <button onClick={() => setShowTerminal(false)} className="btn" style={{ padding: '4px' }}>
+                            <X size={14}/>
+                        </button>
+                    </div>
+                    <div className="pipeline-terminal-body" ref={terminalBodyRef}>
+                        {executionLogs}
+                        {isExecuting && <div className="blinking-cursor"></div>}
+                    </div>
                 </div>
             )}
         </div>

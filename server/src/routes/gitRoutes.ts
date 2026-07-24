@@ -2,7 +2,10 @@ import { Router } from 'express';
 import git from 'isomorphic-git';
 import fs from 'fs';
 import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
+const execAsync = promisify(exec);
 const router = Router();
 
 // Default: the project itself. Uploaded repos live in UPLOADS_DIR.
@@ -175,65 +178,23 @@ router.get('/branches', async (req, res) => {
     }
 });
 
-// GET /api/git/diff?from=&to= — diff between commits
+// GET /api/git/diff?oid=&repo= — diff for a commit
 router.get('/diff', async (req, res) => {
     try {
         const dir = resolveRepo(req.query.repo as string | undefined);
-        const filePath = req.query.file as string;
+        const oid = req.query.oid as string;
+        
+        if (!oid) return res.status(400).json({ error: 'oid required' });
+
         const isRepo = await isGitRepo(dir);
-        if (!isRepo) return res.json({ lines: [] });
+        if (!isRepo) return res.json({ patch: '' });
 
-        // Get commits for diff
-        const commits = await git.log({ fs, dir, depth: 2 });
-        if (commits.length < 2) return res.json({ lines: [], message: 'Not enough commits for diff' });
-
-        const newOid = commits[0].oid;
-        const oldOid = commits[1].oid;
-
-        const ADDED = '\u001b[32m';
-        const REMOVED = '\u001b[31m';
-
-        // Simple diff via reading old vs new file content
-        let oldContent = '';
-        let newContent = '';
-
-        try {
-            const oldBlob = await git.readBlob({ fs, dir, oid: oldOid, filepath: filePath });
-            oldContent = new TextDecoder().decode(oldBlob.blob);
-        } catch { oldContent = ''; }
-
-        try {
-            const newBlob = await git.readBlob({ fs, dir, oid: newOid, filepath: filePath });
-            newContent = new TextDecoder().decode(newBlob.blob);
-        } catch { newContent = ''; }
-
-        const oldLines = oldContent.split('\n');
-        const newLines = newContent.split('\n');
-
-        // Build a simple unified diff
-        const lines: Array<{ type: 'add' | 'remove' | 'context'; content: string; lineNo?: number }> = [];
-        const maxLen = Math.max(oldLines.length, newLines.length);
-
-        for (let i = 0; i < maxLen; i++) {
-            const oldLine = oldLines[i];
-            const newLine = newLines[i];
-            if (oldLine === undefined) {
-                lines.push({ type: 'add', content: newLine, lineNo: i + 1 });
-            } else if (newLine === undefined) {
-                lines.push({ type: 'remove', content: oldLine, lineNo: i + 1 });
-            } else if (oldLine !== newLine) {
-                lines.push({ type: 'remove', content: oldLine, lineNo: i + 1 });
-                lines.push({ type: 'add', content: newLine, lineNo: i + 1 });
-            } else {
-                lines.push({ type: 'context', content: newLine, lineNo: i + 1 });
-            }
-        }
-
+        // Get the patch using native git which handles everything beautifully
+        const { stdout } = await execAsync(`git show ${oid} --format=`, { cwd: dir });
+        
         res.json({
-            file: filePath,
-            oldOid: oldOid.slice(0, 7),
-            newOid: newOid.slice(0, 7),
-            lines,
+            oid,
+            patch: stdout
         });
     } catch (e: any) {
         res.status(500).json({ error: e.message });

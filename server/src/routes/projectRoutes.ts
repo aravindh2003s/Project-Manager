@@ -1,3 +1,4 @@
+
 import { Router } from 'express';
 import { requireAuth, prisma } from '../auth';
 
@@ -80,6 +81,10 @@ router.post('/:id/tasks', requireAuth, async (req, res) => {
                 projectId: id, createdById: user.id
             }
         });
+        
+        const io = req.app.get('io');
+        if (io) io.to(id).emit('task_created', task);
+        
         res.json(task);
     } catch (error) {
         res.status(500).json({ error: 'Failed to create task' });
@@ -90,15 +95,21 @@ router.post('/:id/tasks', requireAuth, async (req, res) => {
 router.patch('/:id/tasks/:taskId', requireAuth, async (req, res) => {
     try {
         const taskId = getParam(req.params.taskId);
-        const { status, priority, title, description } = req.body;
+        const { status, priority, title, description, commitOids } = req.body;
         if (!taskId) return res.status(400).json({ error: 'Task id is required' });
         const updateData: any = {};
         if (status !== undefined)      updateData.status = status;
         if (priority !== undefined)    updateData.priority = priority;
         if (title !== undefined)       updateData.title = title;
         if (description !== undefined) updateData.description = description;
+        if (commitOids !== undefined)  updateData.commitOids = commitOids;
 
         const task = await prisma.task.update({ where: { id: taskId }, data: updateData });
+        
+        const io = req.app.get('io');
+        const projectId = getParam(req.params.id);
+        if (io && projectId) io.to(projectId).emit('task_updated', task);
+        
         res.json(task);
     } catch (error) {
         res.status(500).json({ error: 'Failed to update task' });
@@ -111,9 +122,50 @@ router.delete('/:id/tasks/:taskId', requireAuth, async (req, res) => {
         const taskId = getParam(req.params.taskId);
         if (!taskId) return res.status(400).json({ error: 'Task id is required' });
         await prisma.task.delete({ where: { id: taskId } });
+        
+        const io = req.app.get('io');
+        const projectId = getParam(req.params.id);
+        if (io && projectId) io.to(projectId).emit('task_deleted', taskId);
+        
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: 'Failed to delete task' });
+    }
+});
+
+// POST create a pipeline
+router.post('/:id/pipelines', requireAuth, async (req, res) => {
+    try {
+        const id = getParam(req.params.id);
+        const { name, yaml, flowState } = req.body;
+        const user = res.locals.user;
+        if (!id) return res.status(400).json({ error: 'Project id is required' });
+
+        const pipeline = await prisma.pipeline.create({
+            data: {
+                name, yaml, flowState,
+                projectId: id, createdById: user.id
+            }
+        });
+        res.status(201).json(pipeline);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to save pipeline' });
+    }
+});
+
+// GET pipelines
+router.get('/:id/pipelines', requireAuth, async (req, res) => {
+    try {
+        const id = getParam(req.params.id);
+        if (!id) return res.status(400).json({ error: 'Project id is required' });
+        
+        const pipelines = await prisma.pipeline.findMany({
+            where: { projectId: id },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(pipelines);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch pipelines' });
     }
 });
 

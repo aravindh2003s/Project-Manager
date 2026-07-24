@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import './Login.css';
 
 export default function Login() {
     const navigate = useNavigate();
@@ -48,56 +49,58 @@ export default function Login() {
                 </div>
             </div>
 
-            <div className="card login-card">
-                <div className="login-card-header">
-                    <h2 className="login-title">{mode === 'login' ? 'Sign in to your workspace' : 'Create your workspace account'}</h2>
-                    <p className="login-subtitle">
-                        {mode === 'login' ? 'Use your account to access projects and settings.' : 'Create an account to start managing projects in Nexus.'}
-                    </p>
-                </div>
+            <div className="login-card-container">
+                <div className="login-card">
+                    <div className="login-card-header">
+                        <h2 className="login-title">{mode === 'login' ? 'Sign in to your workspace' : 'Create your workspace account'}</h2>
+                        <p className="login-subtitle">
+                            {mode === 'login' ? 'Use your account to access projects and settings.' : 'Create an account to start managing projects in Nexus.'}
+                        </p>
+                    </div>
 
-                <div className="login-switch">
-                    <button type="button" className={`login-switch-btn ${mode === 'login' ? 'active' : ''}`} onClick={() => setMode('login')}>
-                        Sign In
-                    </button>
-                    <button type="button" className={`login-switch-btn ${mode === 'register' ? 'active' : ''}`} onClick={() => setMode('register')}>
-                        Create Account
-                    </button>
-                </div>
+                    <div className="login-switch">
+                        <button type="button" className={`login-switch-btn ${mode === 'login' ? 'active' : ''}`} onClick={() => setMode('login')}>
+                            Sign In
+                        </button>
+                        <button type="button" className={`login-switch-btn ${mode === 'register' ? 'active' : ''}`} onClick={() => setMode('register')}>
+                            Create Account
+                        </button>
+                    </div>
 
-                <form className="login-form" onSubmit={handleSubmit}>
-                    {mode === 'register' && (
+                    <form className="login-form" onSubmit={handleSubmit}>
+                        {mode === 'register' && (
+                            <div>
+                                <label className="login-label" htmlFor="nameInput">Full Name</label>
+                                <input id="nameInput" value={name} onChange={(e) => setName(e.target.value)} type="text" placeholder="Enter your name" className="login-input" required />
+                            </div>
+                        )}
+
                         <div>
-                            <label className="login-label" htmlFor="nameInput">Full Name</label>
-                            <input id="nameInput" value={name} onChange={(e) => setName(e.target.value)} type="text" placeholder="Enter your name" className="login-input" required />
+                            <label className="login-label" htmlFor="emailInput">Email</label>
+                            <input id="emailInput" value={email} onChange={(e) => setEmail(e.target.value)} type="email" title="Email Address" placeholder="Enter your email" className="login-input" required />
                         </div>
-                    )}
 
-                    <div>
-                        <label className="login-label" htmlFor="emailInput">Email</label>
-                        <input id="emailInput" value={email} onChange={(e) => setEmail(e.target.value)} type="email" title="Email Address" placeholder="Enter your email" className="login-input" required />
+                        <div>
+                            <label className="login-label" htmlFor="passwordInput">Password</label>
+                            <input id="passwordInput" value={password} onChange={(e) => setPassword(e.target.value)} type="password" title="Password" placeholder="Enter your password" className="login-input" required minLength={6} />
+                        </div>
+
+                        {error && <div className="login-error">{error}</div>}
+
+                        <button type="submit" className="login-submit" disabled={loading}>
+                            {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+                        </button>
+                    </form>
+
+                    <div className="login-footer">
+                        <span>{mode === 'login' ? "Don't have an account?" : 'Already have an account?'}</span>
+                        <button type="button" className="login-link-btn" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
+                            {mode === 'login' ? 'Create one' : 'Sign in'}
+                        </button>
                     </div>
 
-                    <div>
-                        <label className="login-label" htmlFor="passwordInput">Password</label>
-                        <input id="passwordInput" value={password} onChange={(e) => setPassword(e.target.value)} type="password" title="Password" placeholder="Enter your password" className="login-input" required minLength={6} />
-                    </div>
-
-                    {error && <div className="login-error">{error}</div>}
-
-                    <button type="submit" className="btn btn-primary login-submit" disabled={loading}>
-                        {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
-                    </button>
-                </form>
-
-                <div className="login-footer">
-                    <span>{mode === 'login' ? "Don't have an account?" : 'Already have an account?'}</span>
-                    <button type="button" className="login-link-btn" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
-                        {mode === 'login' ? 'Create one' : 'Sign in'}
-                    </button>
+                    <Link to="/" className="login-back-link">Back to overview</Link>
                 </div>
-
-                <Link to="/" className="login-back-link">Back to overview</Link>
             </div>
         </div>
     );

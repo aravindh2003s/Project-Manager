@@ -1,0 +1,18 @@
+.global-bg-video {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  z-index: -9999; /* Place it behind everything */
+  filter: blur(12px); /* Blur effect as requested */
+  transform: scale(1.05); /* Prevent blur from exposing edges */
+  pointer-events: none; /* Prevent video from blocking clicks */
+  opacity: 0.8; /* Slightly dim it so text remains readable depending on the video */
+}
+
+/* Ensure the root and body don't have solid backgrounds that block the video */
+body, #root {
+  background-color: transparent !important;
+}

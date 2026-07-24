@@ -1,71 +1,103 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, FolderKanban, Shield, Users } from 'lucide-react';
+import { ArrowRight, FolderKanban, Shield, Users, Sparkles, LayoutDashboard, GitMerge } from 'lucide-react';
 
 export default function Home() {
     return (
         <div className="home-shell">
-            <section className="home-hero">
-                <div className="home-badge">Nexus Workspace</div>
-                <h1>Project operations for teams that need clarity, not clutter.</h1>
-                <p>
-                    Plan work, manage delivery, and keep your project workspace organized in one
-                    secure place built for modern software teams.
-                </p>
-
-                <div className="home-actions">
-                    <Link to="/login" className="btn btn-primary">
-                        Open Workspace <ArrowRight size={14} />
+            {/* Background Effects */}
+            <div className="home-glow home-glow-primary"></div>
+            <div className="home-glow home-glow-secondary"></div>
+            
+            <header className="home-header">
+                <div className="home-brand">
+                    <Sparkles size={24} className="home-brand-icon" />
+                    <span>Nexus Workspace</span>
+                </div>
+                <div className="home-nav">
+                    <Link to="/login" className="btn btn-primary home-nav-btn">
+                        Sign In <ArrowRight size={14} />
                     </Link>
-                    <a href="#features" className="btn">View capabilities</a>
                 </div>
-            </section>
+            </header>
 
-            <section className="home-preview card">
-                <div className="home-preview-sidebar">
-                    <div className="home-preview-brand">Nexus</div>
-                    <div className="home-preview-nav">
-                        <span>Dashboard</span>
-                        <span>Projects</span>
-                        <span>Issues</span>
-                        <span>Repository</span>
-                        <span>Settings</span>
+            <main className="home-main">
+                <section className="home-hero">
+                    <div className="home-badge">
+                        <Sparkles size={12} /> Introducing Nexus 2.0
                     </div>
-                </div>
-                <div className="home-preview-main">
-                    <div className="home-preview-header">
-                        <strong>Delivery overview</strong>
-                        <span>3 active projects</span>
-                    </div>
-                    <div className="home-preview-stats">
-                        <div><strong>18</strong><span>Open issues</span></div>
-                        <div><strong>76%</strong><span>Sprint completion</span></div>
-                        <div><strong>4</strong><span>Team members</span></div>
-                    </div>
-                    <div className="home-preview-board">
-                        <div className="home-preview-column"><span>Todo</span><div /><div /></div>
-                        <div className="home-preview-column"><span>In Progress</span><div /><div /></div>
-                        <div className="home-preview-column"><span>Done</span><div /><div /></div>
-                    </div>
-                </div>
-            </section>
+                    <h1 className="home-title">
+                        Operations for teams that need <br />
+                        <span className="text-gradient">clarity, not clutter.</span>
+                    </h1>
+                    <p className="home-subtitle">
+                        Plan work, manage delivery, and keep your project workspace organized in one
+                        secure place built for modern software teams.
+                    </p>
 
-            <section id="features" className="home-features">
-                <div className="card home-feature-card">
-                    <FolderKanban size={20} />
-                    <h3>Structured delivery</h3>
-                    <p>Track projects, issues, and progress with a clearer workflow-focused workspace.</p>
-                </div>
-                <div className="card home-feature-card">
-                    <Users size={20} />
-                    <h3>Team ownership</h3>
-                    <p>Support real users, personalized settings, and a more credible multi-user foundation.</p>
-                </div>
-                <div className="card home-feature-card">
-                    <Shield size={20} />
-                    <h3>Safer operations</h3>
-                    <p>Protected routes and authenticated API access keep project data behind sign-in.</p>
-                </div>
-            </section>
+                    <div className="home-actions">
+                        <Link to="/login" className="btn btn-primary btn-lg">
+                            Get Started Free <ArrowRight size={16} />
+                        </Link>
+                        <a href="#features" className="btn btn-secondary btn-lg">
+                            Explore Capabilities
+                        </a>
+                    </div>
+                </section>
+
+                <section className="home-preview-section">
+                    <div className="home-preview-window">
+                        <div className="preview-topbar">
+                            <div className="preview-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                        </div>
+                        <div className="preview-content">
+                            <div className="preview-sidebar">
+                                <div className="preview-sidebar-item active"></div>
+                                <div className="preview-sidebar-item"></div>
+                                <div className="preview-sidebar-item"></div>
+                            </div>
+                            <div className="preview-main">
+                                <div className="preview-header"></div>
+                                <div className="preview-stats">
+                                    <div className="preview-stat-box"></div>
+                                    <div className="preview-stat-box"></div>
+                                    <div className="preview-stat-box"></div>
+                                </div>
+                                <div className="preview-board">
+                                    <div className="preview-col"><div className="preview-card"></div><div className="preview-card"></div></div>
+                                    <div className="preview-col"><div className="preview-card"></div></div>
+                                    <div className="preview-col"><div className="preview-card"></div><div className="preview-card"></div><div className="preview-card"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="features" className="home-features">
+                    <div className="home-feature-card">
+                        <div className="feature-icon-wrapper">
+                            <FolderKanban size={24} />
+                        </div>
+                        <h3>Structured Delivery</h3>
+                        <p>Track projects, issues, and progress with a clearer workflow-focused workspace designed for speed.</p>
+                    </div>
+                    <div className="home-feature-card">
+                        <div className="feature-icon-wrapper">
+                            <Users size={24} />
+                        </div>
+                        <h3>Team Ownership</h3>
+                        <p>Support real users, personalized settings, and a more credible multi-user foundation built for scale.</p>
+                    </div>
+                    <div className="home-feature-card">
+                        <div className="feature-icon-wrapper">
+                            <Shield size={24} />
+                        </div>
+                        <h3>Safer Operations</h3>
+                        <p>Protected routes and authenticated API access keep project data secure behind sign-in.</p>
+                    </div>
+                </section>
+            </main>
         </div>
     );
 }
