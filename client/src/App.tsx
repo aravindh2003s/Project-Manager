@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import bgVideo from './assets/bg-video.mp4';
 import './global-bg.css';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -21,9 +20,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 function App() {
   return (
     <>
-      <video className="global-bg-video" autoPlay loop muted playsInline>
-        <source src={bgVideo} type="video/mp4" />
-      </video>
       <Router>
       <Routes>
         <Route path="/" element={<Home />} />

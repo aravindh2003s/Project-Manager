@@ -11,7 +11,7 @@ export default function Home() {
             <header className="home-header">
                 <div className="home-brand">
                     <Sparkles size={24} className="home-brand-icon" />
-                    <span>Nexus Workspace</span>
+                    <span>GrowTech PMS</span>
                 </div>
                 <div className="home-nav">
                     <Link to="/login" className="btn btn-primary home-nav-btn">
@@ -23,7 +23,7 @@ export default function Home() {
             <main className="home-main">
                 <section className="home-hero">
                     <div className="home-badge">
-                        <Sparkles size={12} /> Introducing Nexus 2.0
+                        <Sparkles size={12} /> Introducing GrowTech PMS 2.0
                     </div>
                     <h1 className="home-title">
                         Operations for teams that need <br />

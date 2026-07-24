@@ -50,7 +50,7 @@ function MainLayout() {
             <aside className="ml-sidebar">
                 <div className="ml-logo">
                     <Zap size={20} className="ml-logo-icon" />
-                    <span>Nexus</span>
+                    <span>GrowTech PMS</span>
                 </div>
 
                 <div className="ml-new-dropdown-wrap" ref={newDropdownRef}>

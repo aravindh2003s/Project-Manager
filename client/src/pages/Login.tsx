@@ -37,7 +37,7 @@ export default function Login() {
         <div className="login-shell">
             <div className="login-hero">
                 <div className="login-badge"><Sparkles size={14} /> Client-ready project operations</div>
-                <h1>Nexus Workspace</h1>
+                <h1>GrowTech PMS</h1>
                 <p>
                     A focused workspace for delivery teams to track projects, organize work,
                     and collaborate with confidence.
@@ -54,7 +54,7 @@ export default function Login() {
                     <div className="login-card-header">
                         <h2 className="login-title">{mode === 'login' ? 'Sign in to your workspace' : 'Create your workspace account'}</h2>
                         <p className="login-subtitle">
-                            {mode === 'login' ? 'Use your account to access projects and settings.' : 'Create an account to start managing projects in Nexus.'}
+                            {mode === 'login' ? 'Use your account to access projects and settings.' : 'Create an account to start managing projects in GrowTech PMS.'}
                         </p>
                     </div>
 
