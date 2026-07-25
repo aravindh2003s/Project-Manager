@@ -20,12 +20,6 @@ const PRIORITY_MAP: Record<string, { label: string; className: string }> = {
     LOW:    { label: 'Low',    className: 'priority-low' },
 };
 
-const STATUS_MAP: Record<string, { label: string; icon: React.ReactNode }> = {
-    TODO:        { label: 'Todo',        icon: <Circle size={14} /> },
-    IN_PROGRESS: { label: 'In Progress', icon: <ArrowUpDown size={14} /> },
-    DONE:        { label: 'Done',        icon: <CheckCircle size={14} /> },
-};
-
 function ProjectDetails() {
     const { projectId } = useParams<{ projectId: string }>();
     const {
@@ -43,6 +37,7 @@ function ProjectDetails() {
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const [newTaskDesc, setNewTaskDesc] = useState('');
     const [newTaskPriority, setNewTaskPriority] = useState('MEDIUM');
+    const [newTaskColumnId, setNewTaskColumnId] = useState('');
     const [activeTab, setActiveTab] = useState('board');
     const [availableCommits, setAvailableCommits] = useState<any[]>([]);
     const [editTaskCommitOids, setEditTaskCommitOids] = useState<string[]>([]);
@@ -85,10 +80,16 @@ function ProjectDetails() {
         };
     }, [projectId, fetchProjectById, setSearchQuery, initSocket, disconnectSocket]);
 
+    useEffect(() => {
+        if (currentProject && currentProject.columns.length > 0 && !newTaskColumnId) {
+            setNewTaskColumnId(currentProject.columns[0].id);
+        }
+    }, [currentProject, newTaskColumnId]);
+
     const handleCreateTask = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newTaskTitle.trim() || !projectId) return;
-        await createTask(projectId, { title: newTaskTitle, description: newTaskDesc, status: 'TODO', priority: newTaskPriority });
+        await createTask(projectId, { title: newTaskTitle, description: newTaskDesc, columnId: newTaskColumnId, priority: newTaskPriority });
         setNewTaskTitle(''); setNewTaskDesc(''); setNewTaskPriority('MEDIUM');
         setIsModalOpen(false);
     };
@@ -126,15 +127,18 @@ function ProjectDetails() {
         const { active, over } = event;
         if (!over || !currentProject || !projectId) return;
         const taskId = active.id as string;
-        let newStatus = over.id as string;
-        if (!['TODO', 'IN_PROGRESS', 'DONE'].includes(newStatus)) {
-            const overTask = currentProject.tasks.find(t => t.id === newStatus);
-            if (overTask) newStatus = overTask.status;
+        let newColumnId = over.id as string;
+        
+        // If dragged over another task, get its columnId
+        if (!currentProject.columns.find(c => c.id === newColumnId)) {
+            const overTask = currentProject.tasks.find(t => t.id === newColumnId);
+            if (overTask && overTask.columnId) newColumnId = overTask.columnId;
             else return;
         }
+        
         const activeTask = currentProject.tasks.find(t => t.id === taskId);
-        if (activeTask && activeTask.status !== newStatus) {
-            await updateTaskStatus(projectId, taskId, newStatus);
+        if (activeTask && activeTask.columnId !== newColumnId) {
+            await updateTaskStatus(projectId, taskId, newColumnId);
         }
     };
 
@@ -221,10 +225,14 @@ function ProjectDetails() {
                     <div className="pd-filters">
                         <div className="pd-filter-group">
                             <Filter size={13} />
-                            {(['ALL','TODO','IN_PROGRESS','DONE'] as const).map(s => (
-                                <button key={s} className={`pd-filter-chip ${taskFilter === s ? 'active' : ''}`}
-                                    onClick={() => setTaskFilter(s)}>
-                                    {s === 'ALL' ? 'All' : STATUS_MAP[s]?.label}
+                            <button className={`pd-filter-chip ${taskFilter === 'ALL' ? 'active' : ''}`}
+                                onClick={() => setTaskFilter('ALL')}>
+                                All
+                            </button>
+                            {currentProject.columns.map(c => (
+                                <button key={c.id} className={`pd-filter-chip ${taskFilter === c.id ? 'active' : ''}`}
+                                    onClick={() => setTaskFilter(c.id)}>
+                                    {c.name}
                                 </button>
                             ))}
                         </div>
@@ -246,12 +254,18 @@ function ProjectDetails() {
                 {activeTab === 'board' && (
                     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
                         <div className="board-container">
-                            {(['TODO','IN_PROGRESS','DONE'] as const).map(status => (
-                                <BoardColumn key={status} title={STATUS_MAP[status].label} status={status}
-                                    tasks={filteredTasks.filter(t => t.status === status)}
+                            {currentProject.columns.map(col => (
+                                <BoardColumn key={col.id} title={col.name} columnId={col.id}
+                                    tasks={filteredTasks.filter(t => t.columnId === col.id)}
                                     onEdit={setEditTask}
                                     onDelete={(tid) => projectId && deleteTask(projectId, tid)} />
                             ))}
+                            <div className="board-col add-col-btn" style={{ background: 'transparent', border: '1px dashed var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: 0.7 }} onClick={() => {
+                                const name = prompt('Column Name:');
+                                if (name) useProjectStore.getState().createColumn(projectId!, name, currentProject.columns.length);
+                            }}>
+                                <Plus size={16} style={{ marginRight: 8 }} /> Add Column
+                            </div>
                         </div>
                     </DndContext>
                 )}
@@ -262,21 +276,23 @@ function ProjectDetails() {
                             <span>Title</span><span>Status</span><span>Priority</span><span>Actions</span>
                         </div>
                         {filteredTasks.length === 0 && <div className="list-empty">No issues match your filters.</div>}
-                        {filteredTasks.map(task => (
+                        {filteredTasks.map(task => {
+                            const col = currentProject.columns.find(c => c.id === task.columnId);
+                            return (
                             <div key={task.id} className="list-row">
                                 <div className="list-row-title">
-                                    {STATUS_MAP[task.status]?.icon}
+                                    <Circle size={14} className="color-muted" />
                                     <span>{task.title}</span>
                                     {task.description && <p className="list-row-desc">{task.description}</p>}
                                 </div>
-                                <div><span className={`status-badge status-${task.status.toLowerCase()}`}>{STATUS_MAP[task.status]?.label}</span></div>
+                                <div><span className={`status-badge status-todo`}>{col?.name || 'Unknown'}</span></div>
                                 <div><span className={`priority-badge ${PRIORITY_MAP[task.priority]?.className}`}><Flag size={11} /> {PRIORITY_MAP[task.priority]?.label}</span></div>
                                 <div className="list-row-actions">
                                     <button className="icon-action-btn" title="Edit task" onClick={() => setEditTask(task)}><Edit3 size={14} /></button>
                                     <button className="icon-action-btn danger" title="Delete task" onClick={() => projectId && deleteTask(projectId, task.id)}><Trash2 size={14} /></button>
                                 </div>
                             </div>
-                        ))}
+                        )})}
                     </div>
                 )}
 
@@ -293,15 +309,17 @@ function ProjectDetails() {
                         </div>
                         <h4>Sprint Items</h4>
                         <div className="sprint-tasks-list">
-                            {currentProject.tasks.map(task => (
+                            {currentProject.tasks.map(task => {
+                                const col = currentProject.columns.find(c => c.id === task.columnId);
+                                return (
                                 <div key={task.id} className="sprint-task-item">
-                                    <div className="sprint-task-left">{STATUS_MAP[task.status]?.icon}<span>{task.title}</span></div>
+                                    <div className="sprint-task-left"><Circle size={14} className="color-muted"/><span>{task.title}</span></div>
                                     <div className="sprint-task-right">
                                         <span className={`priority-badge ${PRIORITY_MAP[task.priority]?.className}`}>{PRIORITY_MAP[task.priority]?.label}</span>
-                                        <span className={`status-badge status-${task.status.toLowerCase()}`}>{STATUS_MAP[task.status]?.label}</span>
+                                        <span className={`status-badge status-todo`}>{col?.name || 'Unknown'}</span>
                                     </div>
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     </div>
                 )}
@@ -344,6 +362,11 @@ function ProjectDetails() {
                             <label className="form-label" htmlFor="taskDesc">Description</label>
                             <textarea id="taskDesc" placeholder="Add a description…" value={newTaskDesc}
                                 onChange={e => setNewTaskDesc(e.target.value)} className="modal-input modal-textarea" rows={3} />
+                            <label className="form-label" htmlFor="taskColumn">Column</label>
+                            <select id="taskColumn" title="Column" value={newTaskColumnId}
+                                onChange={e => setNewTaskColumnId(e.target.value)} className="modal-input modal-select">
+                                {currentProject.columns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
                             <label className="form-label" htmlFor="taskPriority">Priority</label>
                             <select id="taskPriority" title="Priority" value={newTaskPriority}
                                 onChange={e => setNewTaskPriority(e.target.value)} className="modal-input modal-select">
@@ -377,12 +400,10 @@ function ProjectDetails() {
                                 className="modal-input modal-textarea" rows={3} />
                             <div className="modal-two-col">
                                 <div>
-                                    <label className="form-label" htmlFor="editStatus">Status</label>
-                                    <select id="editStatus" title="Status" value={editTask.status}
-                                        onChange={e => setEditTask({ ...editTask, status: e.target.value })} className="modal-input modal-select">
-                                        <option value="TODO">Todo</option>
-                                        <option value="IN_PROGRESS">In Progress</option>
-                                        <option value="DONE">Done</option>
+                                    <label className="form-label" htmlFor="editColumn">Column</label>
+                                    <select id="editColumn" title="Column" value={editTask.columnId || ''}
+                                        onChange={e => setEditTask({ ...editTask, columnId: e.target.value })} className="modal-input modal-select">
+                                        {currentProject.columns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
                                 </div>
                                 <div>
@@ -471,17 +492,14 @@ function PipelineItem({ name, status, time, duration, branch }: { name: string, 
     );
 }
 
-function BoardColumn({ title, status, tasks, onEdit, onDelete }: {
-    title: string, status: string, tasks: Task[], onEdit: (t: Task) => void, onDelete: (id: string) => void
+function BoardColumn({ title, columnId, tasks, onEdit, onDelete }: {
+    title: string, columnId: string, tasks: Task[], onEdit: (t: Task) => void, onDelete: (id: string) => void
 }) {
-    const { setNodeRef } = useDroppable({ id: status });
-    const statusIconMap: Record<string, React.ReactNode> = {
-        TODO: <Circle size={14} />, IN_PROGRESS: <ArrowUpDown size={14} />, DONE: <CheckCircle size={14} />
-    };
+    const { setNodeRef } = useDroppable({ id: columnId });
     return (
-        <div ref={setNodeRef} className={`board-col board-col-${status.toLowerCase()}`}>
+        <div ref={setNodeRef} className={`board-col board-col-todo`}>
             <div className="board-col-header">
-                <div className="board-col-title">{statusIconMap[status]}<span>{title}</span></div>
+                <div className="board-col-title"><Circle size={14} className="color-muted"/><span>{title}</span></div>
                 <span className="board-col-count">{tasks.length}</span>
             </div>
             <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>

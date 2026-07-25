@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, FolderKanban, Shield, Users, Sparkles, LayoutDashboard, GitMerge } from 'lucide-react';
+import { ArrowRight, FolderKanban, Shield, Users, Sparkles } from 'lucide-react';
 
 export default function Home() {
     return (

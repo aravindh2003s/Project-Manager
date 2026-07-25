@@ -3,11 +3,19 @@ import { io, Socket } from 'socket.io-client';
 import { persist } from 'zustand/middleware';
 import { apiFetch } from '../api/http';
 
+export interface BoardColumn {
+    id: string;
+    name: string;
+    order: number;
+    projectId: string;
+}
+
 export interface Task {
     id: string;
     title: string;
     description?: string;
-    status: string;
+    status: string; // Deprecated, use columnId
+    columnId?: string;
     priority: string;
     assigneeId?: string;
     assignee?: { id: string; name?: string; email: string } | null;
@@ -30,9 +38,26 @@ export interface Project {
     name: string;
     description?: string;
     tasks: Task[];
+    columns: BoardColumn[];
     pipelines?: Pipeline[];
     updatedAt: string;
     createdAt?: string;
+}
+
+export function getProjectStats(project: Project | null) {
+    if (!project) return { total: 0, done: 0, inProgress: 0, todo: 0, completionRate: 0 };
+    const tasks = project.tasks;
+    const columns = project.columns || [];
+    const total = tasks.length;
+    if (columns.length === 0 || total === 0) return { total, done: 0, inProgress: 0, todo: 0, completionRate: 0 };
+    
+    const doneCol = columns[columns.length - 1];
+    const todoCol = columns[0];
+    const done = tasks.filter(t => t.columnId === doneCol.id).length;
+    const todo = tasks.filter(t => t.columnId === todoCol.id).length;
+    const inProgress = total - done - todo;
+    
+    return { total, done, inProgress, todo, completionRate: Math.round((done / total) * 100) };
 }
 
 interface ProjectState {
@@ -40,7 +65,7 @@ interface ProjectState {
     currentProject: Project | null;
     loading: boolean;
     error: string | null;
-    taskFilter: 'ALL' | 'TODO' | 'IN_PROGRESS' | 'DONE';
+    taskFilter: string;
     taskPriorityFilter: 'ALL' | 'LOW' | 'MEDIUM' | 'HIGH';
     searchQuery: string;
 
@@ -48,15 +73,19 @@ interface ProjectState {
     fetchProjectById: (id: string) => Promise<void>;
     createProject: (name: string, description: string) => Promise<void>;
     createTask: (projectId: string, task: Partial<Task>) => Promise<void>;
-    updateTaskStatus: (projectId: string, taskId: string, status: string) => Promise<void>;
+    updateTaskStatus: (projectId: string, taskId: string, columnId: string) => Promise<void>;
     updateTask: (projectId: string, taskId: string, patch: Partial<Task>) => Promise<void>;
     deleteTask: (projectId: string, taskId: string) => Promise<void>;
-    setTaskFilter: (filter: ProjectState['taskFilter']) => void;
+    setTaskFilter: (filter: string) => void;
     setTaskPriorityFilter: (filter: ProjectState['taskPriorityFilter']) => void;
     setSearchQuery: (q: string) => void;
     getFilteredTasks: () => Task[];
     getStats: () => { total: number; done: number; inProgress: number; todo: number; completionRate: number };
     
+    createColumn: (projectId: string, name: string, order: number) => Promise<void>;
+    updateColumn: (projectId: string, colId: string, name: string, order: number) => Promise<void>;
+    deleteColumn: (projectId: string, colId: string) => Promise<void>;
+
     savePipeline: (projectId: string, payload: { name: string, yaml: string, flowState?: string }) => Promise<void>;
     fetchPipelines: (projectId: string) => Promise<Pipeline[]>;
 
@@ -116,17 +145,17 @@ export const useProjectStore = create<ProjectState>()(
                 }
             },
 
-            updateTaskStatus: async (projectId: string, taskId: string, status: string) => {
+            updateTaskStatus: async (projectId: string, taskId: string, columnId: string) => {
                 // Optimistic update
                 set((state) => {
                     if (!state.currentProject) return state;
                     const updatedTasks = state.currentProject.tasks.map(t =>
-                        t.id === taskId ? { ...t, status } : t
+                        t.id === taskId ? { ...t, columnId, status: columnId } : t
                     );
                     return { currentProject: { ...state.currentProject, tasks: updatedTasks } };
                 });
                 try {
-                    await apiFetch(`/projects/${projectId}/tasks/${taskId}`, { method: 'PATCH' }, { status });
+                    await apiFetch(`/projects/${projectId}/tasks/${taskId}`, { method: 'PATCH' }, { columnId } as any);
                 } catch (error) {
                     // Revert - refetch
                     get().fetchProjectById(projectId);
@@ -173,7 +202,7 @@ export const useProjectStore = create<ProjectState>()(
                 const { currentProject, taskFilter, taskPriorityFilter, searchQuery } = get();
                 if (!currentProject) return [];
                 return currentProject.tasks.filter(task => {
-                    const matchesStatus = taskFilter === 'ALL' || task.status === taskFilter;
+                    const matchesStatus = taskFilter === 'ALL' || task.columnId === taskFilter;
                     const matchesPriority = taskPriorityFilter === 'ALL' || task.priority === taskPriorityFilter;
                     const matchesSearch = !searchQuery || task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         (task.description?.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -183,13 +212,47 @@ export const useProjectStore = create<ProjectState>()(
 
             getStats: () => {
                 const { currentProject } = get();
-                if (!currentProject) return { total: 0, done: 0, inProgress: 0, todo: 0, completionRate: 0 };
-                const tasks = currentProject.tasks;
-                const done = tasks.filter(t => t.status === 'DONE').length;
-                const inProgress = tasks.filter(t => t.status === 'IN_PROGRESS').length;
-                const todo = tasks.filter(t => t.status === 'TODO').length;
-                const total = tasks.length;
-                return { total, done, inProgress, todo, completionRate: total > 0 ? Math.round((done / total) * 100) : 0 };
+                return getProjectStats(currentProject);
+            },
+            
+            createColumn: async (projectId: string, name: string, order: number) => {
+                try {
+                    const col = await apiFetch<BoardColumn>(`/projects/${projectId}/columns`, { method: 'POST' }, { name, order } as any);
+                    set((state) => {
+                        if (!state.currentProject || state.currentProject.id !== projectId) return state;
+                        return { currentProject: { ...state.currentProject, columns: [...state.currentProject.columns, col].sort((a,b) => a.order - b.order) } };
+                    });
+                } catch (error) {
+                    console.error('Failed to create column', error);
+                }
+            },
+            updateColumn: async (projectId: string, colId: string, name: string, order: number) => {
+                try {
+                    const col = await apiFetch<BoardColumn>(`/projects/${projectId}/columns/${colId}`, { method: 'PATCH' }, { name, order } as any);
+                    set((state) => {
+                        if (!state.currentProject || state.currentProject.id !== projectId) return state;
+                        return { currentProject: { ...state.currentProject, columns: state.currentProject.columns.map(c => c.id === colId ? col : c).sort((a,b) => a.order - b.order) } };
+                    });
+                } catch (error) {
+                    console.error('Failed to update column', error);
+                }
+            },
+            deleteColumn: async (projectId: string, colId: string) => {
+                try {
+                    await apiFetch(`/projects/${projectId}/columns/${colId}`, { method: 'DELETE' });
+                    set((state) => {
+                        if (!state.currentProject || state.currentProject.id !== projectId) return state;
+                        return { 
+                            currentProject: { 
+                                ...state.currentProject, 
+                                columns: state.currentProject.columns.filter(c => c.id !== colId),
+                                tasks: state.currentProject.tasks.map(t => t.columnId === colId ? { ...t, columnId: undefined, status: 'TODO' } : t) as any
+                            } 
+                        };
+                    });
+                } catch (error) {
+                    console.error('Failed to delete column', error);
+                }
             },
 
             savePipeline: async (projectId: string, payload: { name: string, yaml: string, flowState?: string }) => {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProjectStore } from '../store/projectStore';
+import { useProjectStore, getProjectStats } from '../store/projectStore';
 import { useAuthStore } from '../store/authStore';
 import { Plus, TrendingUp, CheckCircle, Clock, Circle, Search, X, Folder } from 'lucide-react';
 import './Dashboard.css';
@@ -23,8 +23,9 @@ function Dashboard() {
     };
 
     const totalTasks = projects.reduce((a, p) => a + p.tasks.length, 0);
-    const doneTasks = projects.reduce((a, p) => a + p.tasks.filter(t => t.status === 'DONE').length, 0);
-    const inProgressTasks = projects.reduce((a, p) => a + p.tasks.filter(t => t.status === 'IN_PROGRESS').length, 0);
+    const doneTasks = projects.reduce((a, p) => a + getProjectStats(p as any).done, 0);
+    const inProgressTasks = projects.reduce((a, p) => a + getProjectStats(p as any).inProgress, 0);
+    const todoTasks = projects.reduce((a, p) => a + getProjectStats(p as any).todo, 0);
     const overallRate = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
     const filtered = projects.filter(p =>
@@ -63,7 +64,7 @@ function Dashboard() {
                         <div className="progress-fill" style={{ width: `${overallRate}%` }}></div>
                     </div>
                     <div className="dash-progress-breakdown">
-                        <span><Circle size={10} className="color-muted" /> {projects.reduce((a, p) => a + p.tasks.filter(t => t.status === 'TODO').length, 0)} Todo</span>
+                        <span><Circle size={10} className="color-muted" /> {todoTasks} Todo</span>
                         <span><Clock size={10} className="color-warning" /> {inProgressTasks} In Progress</span>
                         <span><CheckCircle size={10} className="color-success" /> {doneTasks} Done</span>
                     </div>
@@ -145,10 +146,10 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode, label:
 
 function ProjectCard({ project }: { project: any }) {
     const navigate = useNavigate();
-    const done = project.tasks.filter((t: any) => t.status === 'DONE').length;
+    const stats = getProjectStats(project as any);
     const total = project.tasks.length;
-    const rate = total > 0 ? Math.round((done / total) * 100) : 0;
-    const inProgress = project.tasks.filter((t: any) => t.status === 'IN_PROGRESS').length;
+    const rate = stats.completionRate;
+    const inProgress = stats.inProgress;
 
     return (
         <div className="card project-card" onClick={() => navigate(`/app/project/${project.id}`)}>

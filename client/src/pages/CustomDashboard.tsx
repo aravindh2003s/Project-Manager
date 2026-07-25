@@ -3,7 +3,7 @@ import GridLayout from 'react-grid-layout';
 import type { Layout as GridLayoutLayout, LayoutItem as GridLayoutItem } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { useProjectStore } from '../store/projectStore';
+import { useProjectStore, getProjectStats } from '../store/projectStore';
 import {
     BarChart2, CheckCircle, Clock, Zap, GitCommit,
     AlertCircle, GitPullRequest, Activity, Plus, X,
@@ -14,8 +14,8 @@ import {
 function StatsWidget({ projects }: { projects: any[] }) {
     const total = projects.length;
     const totalTasks = projects.reduce((a, p) => a + p.tasks.length, 0);
-    const done = projects.reduce((a, p) => a + p.tasks.filter((t: any) => t.status === 'DONE').length, 0);
-    const inProgress = projects.reduce((a, p) => a + p.tasks.filter((t: any) => t.status === 'IN_PROGRESS').length, 0);
+    const done = projects.reduce((a, p) => a + getProjectStats(p as any).done, 0);
+    const inProgress = projects.reduce((a, p) => a + getProjectStats(p as any).inProgress, 0);
     return (
         <div className="widget-content">
             <div className="widget-stats-grid">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProjectStore } from '../store/projectStore';
+import { useProjectStore, getProjectStats } from '../store/projectStore';
 import { Search, X, Plus, Folder, Star, GitFork, AlertCircle } from 'lucide-react';
 
 export default function Projects() {
@@ -94,8 +94,9 @@ export default function Projects() {
             ) : (
                 <div className="projects-list">
                     {filtered.map(project => {
-                        const todoCount = project.tasks.filter(t => t.status === 'TODO').length;
-                        const inProgressCount = project.tasks.filter(t => t.status === 'IN_PROGRESS').length;
+                        const stats = getProjectStats(project as any);
+                        const todoCount = stats.todo;
+                        const inProgressCount = stats.inProgress;
                         const openIssues = todoCount + inProgressCount;
                         return (
                             <div

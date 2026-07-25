@@ -12,7 +12,7 @@ router.get('/', requireAuth, async (_req, res) => {
 
         const workspaces = await prisma.workspace.findMany({
             where: { ownerId: user.id },
-            include: { projects: { include: { tasks: { include: { assignee: true } } } } }
+            include: { projects: { include: { tasks: { include: { assignee: true } }, columns: { orderBy: { order: 'asc' } } } } }
         });
         const projects = workspaces.flatMap((w: any) => w.projects);
         res.json(projects);
@@ -35,8 +35,19 @@ router.post('/', requireAuth, async (req, res) => {
         }
 
         const project = await prisma.project.create({
-            data: { name, description: description || '', workspaceId: workspace.id },
-            include: { tasks: true }
+            data: { 
+                name, 
+                description: description || '', 
+                workspaceId: workspace.id,
+                columns: {
+                    create: [
+                        { name: 'Todo', order: 0 },
+                        { name: 'In Progress', order: 1 },
+                        { name: 'Done', order: 2 }
+                    ]
+                }
+            },
+            include: { tasks: true, columns: { orderBy: { order: 'asc' } } }
         });
         res.status(201).json(project);
     } catch (error) {
@@ -70,14 +81,21 @@ router.get('/:id', requireAuth, async (req, res) => {
 router.post('/:id/tasks', requireAuth, async (req, res) => {
     try {
         const id = getParam(req.params.id);
-        const { title, status, description, priority } = req.body;
+        const { title, status, columnId, description, priority } = req.body;
         const user = res.locals.user;
         if (!id) return res.status(400).json({ error: 'Project id is required' });
+
+        let targetColumnId = columnId;
+        if (!targetColumnId) {
+            const firstCol = await prisma.boardColumn.findFirst({ where: { projectId: id }, orderBy: { order: 'asc' } });
+            if (firstCol) targetColumnId = firstCol.id;
+        }
 
         const task = await prisma.task.create({
             data: {
                 title, description, priority: priority || 'MEDIUM',
                 status: status || 'TODO',
+                columnId: targetColumnId,
                 projectId: id, createdById: user.id
             }
         });
@@ -95,7 +113,7 @@ router.post('/:id/tasks', requireAuth, async (req, res) => {
 router.patch('/:id/tasks/:taskId', requireAuth, async (req, res) => {
     try {
         const taskId = getParam(req.params.taskId);
-        const { status, priority, title, description, commitOids } = req.body;
+        const { status, priority, title, description, commitOids, columnId } = req.body;
         if (!taskId) return res.status(400).json({ error: 'Task id is required' });
         const updateData: any = {};
         if (status !== undefined)      updateData.status = status;
@@ -103,6 +121,7 @@ router.patch('/:id/tasks/:taskId', requireAuth, async (req, res) => {
         if (title !== undefined)       updateData.title = title;
         if (description !== undefined) updateData.description = description;
         if (commitOids !== undefined)  updateData.commitOids = commitOids;
+        if (columnId !== undefined)    updateData.columnId = columnId;
 
         const task = await prisma.task.update({ where: { id: taskId }, data: updateData });
         
@@ -130,6 +149,56 @@ router.delete('/:id/tasks/:taskId', requireAuth, async (req, res) => {
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: 'Failed to delete task' });
+    }
+});
+
+// POST create a column
+router.post('/:id/columns', requireAuth, async (req, res) => {
+    try {
+        const id = getParam(req.params.id);
+        const { name, order } = req.body;
+        if (!id) return res.status(400).json({ error: 'Project id is required' });
+
+        const column = await prisma.boardColumn.create({
+            data: { name, order: order || 0, projectId: id }
+        });
+        res.status(201).json(column);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create column' });
+    }
+});
+
+// PATCH update column
+router.patch('/:id/columns/:colId', requireAuth, async (req, res) => {
+    try {
+        const colId = getParam(req.params.colId);
+        const { name, order } = req.body;
+        if (!colId) return res.status(400).json({ error: 'Column id is required' });
+
+        const updateData: any = {};
+        if (name !== undefined) updateData.name = name;
+        if (order !== undefined) updateData.order = order;
+
+        const column = await prisma.boardColumn.update({ where: { id: colId }, data: updateData });
+        res.json(column);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update column' });
+    }
+});
+
+// DELETE column
+router.delete('/:id/columns/:colId', requireAuth, async (req, res) => {
+    try {
+        const colId = getParam(req.params.colId);
+        if (!colId) return res.status(400).json({ error: 'Column id is required' });
+        
+        // Remove columnId from tasks before deleting the column, or delete tasks?
+        // Usually tasks are deleted or moved. Let's just allow deletion.
+        await prisma.task.updateMany({ where: { columnId: colId }, data: { columnId: null } });
+        await prisma.boardColumn.delete({ where: { id: colId } });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete column' });
     }
 });
 

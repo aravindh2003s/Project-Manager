@@ -1,74 +1,97 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-    CheckCircle, XCircle, Clock, Search, X, Timer,
-    PlayCircle, SkipForward, RefreshCw
+    CheckCircle, XCircle, Clock, Search, X, Circle,
+    PlayCircle, SkipForward, RefreshCw, Loader
 } from 'lucide-react';
-
-interface WorkflowRun {
-    id: string;
-    title: string;
-    commitMsg: string;
-    workflow: string;
-    branch: string;
-    status: 'success' | 'failure' | 'running' | 'skipped';
-    duration: string;
-    time: string;
-    actor: string;
-}
+import { fetchGithubActionRuns } from '../api/github';
+import type { GitHubActionRun } from '../api/github';
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
     success: <CheckCircle size={16} />,
     failure: <XCircle size={16} />,
-    running: <RefreshCw size={16} />,
+    in_progress: <RefreshCw size={16} />,
+    queued: <Clock size={16} />,
     skipped: <SkipForward size={16} />,
+    neutral: <CheckCircle size={16} />
 };
 
 const STATUS_CLASS: Record<string, string> = {
     success: 'action-status-success',
     failure: 'action-status-failure',
-    running: 'action-status-running',
+    in_progress: 'action-status-running',
+    queued: 'action-status-skipped',
     skipped: 'action-status-skipped',
+    neutral: 'action-status-success'
 };
 
-const MOCK_RUNS: WorkflowRun[] = [
-    { id: '1', title: 'Build and Test', commitMsg: 'feat: Add kanban board drag-and-drop', workflow: 'CI', branch: 'feat/kanban', status: 'success', duration: '2m 34s', time: '10 minutes ago', actor: 'Demo User' },
-    { id: '2', title: 'Deploy to Staging', commitMsg: 'feat: Add kanban board drag-and-drop', workflow: 'CD', branch: 'feat/kanban', status: 'success', duration: '4m 12s', time: '8 minutes ago', actor: 'Demo User' },
-    { id: '3', title: 'E2E Tests', commitMsg: 'fix: Resolve task deletion race condition', workflow: 'CI', branch: 'fix/delete-race', status: 'failure', duration: '5m 01s', time: '1 hour ago', actor: 'Demo User' },
-    { id: '4', title: 'Deploy to Production', commitMsg: 'chore: Update dependencies', workflow: 'CD', branch: 'main', status: 'running', duration: '—', time: 'just now', actor: 'Demo User' },
-    { id: '5', title: 'Lint and Type Check', commitMsg: 'refactor: Migrate store to Zustand v5', workflow: 'CI', branch: 'refactor/zustand', status: 'success', duration: '1m 22s', time: '3 hours ago', actor: 'Demo User' },
-    { id: '6', title: 'Build and Test', commitMsg: 'docs: Update README with setup instructions', workflow: 'CI', branch: 'docs/readme', status: 'success', duration: '2m 10s', time: '5 hours ago', actor: 'Demo User' },
-    { id: '7', title: 'Security Scan', commitMsg: 'chore: Update dependencies', workflow: 'Security', branch: 'main', status: 'success', duration: '3m 45s', time: '6 hours ago', actor: 'Demo User' },
-    { id: '8', title: 'Code Coverage', commitMsg: 'feat: Implement global search', workflow: 'CI', branch: 'feat/search', status: 'skipped', duration: '—', time: '1 day ago', actor: 'Demo User' },
-    { id: '9', title: 'Deploy to Staging', commitMsg: 'fix: Sprint date calculation timezone issue', workflow: 'CD', branch: 'fix/timezone', status: 'success', duration: '3m 55s', time: '2 days ago', actor: 'Demo User' },
-    { id: '10', title: 'Build and Test', commitMsg: 'feat: Add sprint planning view', workflow: 'CI', branch: 'feat/sprints', status: 'success', duration: '2m 48s', time: '3 days ago', actor: 'Demo User' },
-];
-
 export default function Actions() {
+    const [repo, setRepo] = useState('facebook/react');
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [runs, setRuns] = useState<GitHubActionRun[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const filtered = MOCK_RUNS
-        .filter(run => {
-            const matchesSearch = !search ||
-                run.title.toLowerCase().includes(search.toLowerCase()) ||
-                run.commitMsg.toLowerCase().includes(search.toLowerCase()) ||
-                run.branch.toLowerCase().includes(search.toLowerCase());
-            const matchesStatus = statusFilter === 'all' || run.status === statusFilter;
-            return matchesSearch && matchesStatus;
-        });
+    useEffect(() => {
+        const load = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const data = await fetchGithubActionRuns(repo);
+                setRuns(data);
+            } catch (err: any) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+        const debounce = setTimeout(load, 500);
+        return () => clearTimeout(debounce);
+    }, [repo]);
+
+    const getStatusStr = (run: GitHubActionRun) => run.conclusion || run.status;
+
+    const filtered = runs.filter(run => {
+        const matchesSearch = !search ||
+            run.name.toLowerCase().includes(search.toLowerCase()) ||
+            run.head_commit.message.toLowerCase().includes(search.toLowerCase()) ||
+            run.head_branch.toLowerCase().includes(search.toLowerCase());
+        const s = getStatusStr(run);
+        const matchesStatus = statusFilter === 'all' || s === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
 
     const statusCounts = {
-        success: MOCK_RUNS.filter(r => r.status === 'success').length,
-        failure: MOCK_RUNS.filter(r => r.status === 'failure').length,
-        running: MOCK_RUNS.filter(r => r.status === 'running').length,
+        success: runs.filter(r => getStatusStr(r) === 'success').length,
+        failure: runs.filter(r => getStatusStr(r) === 'failure').length,
+        running: runs.filter(r => getStatusStr(r) === 'in_progress').length,
+    };
+
+    const timeAgo = (dateStr: string) => {
+        const diff = Date.now() - new Date(dateStr).getTime();
+        const hours = Math.floor(diff / 3600000);
+        if (hours < 1) return 'recently';
+        if (hours < 24) return `${hours} hours ago`;
+        return `${Math.floor(hours / 24)} days ago`;
     };
 
     return (
         <div className="actions-page">
             <div className="actions-header">
-                <h1>Actions</h1>
-                <button className="btn btn-primary" id="runWorkflowBtn" title="Run workflow">
-                    <PlayCircle size={16} /> Run Workflow
+                <div>
+                    <h1>Actions</h1>
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: 8, gap: 8 }}>
+                        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Repository:</span>
+                        <input 
+                            value={repo} 
+                            onChange={e => setRepo(e.target.value)} 
+                            className="dash-search-input" 
+                            style={{ padding: '4px 8px', width: 200, fontSize: 13 }}
+                        />
+                    </div>
+                </div>
+                <button className="btn btn-primary" id="runWorkflowBtn" title="Run workflow" onClick={() => window.open(`https://github.com/${repo}/actions`, '_blank')}>
+                    <PlayCircle size={16} /> GitHub Actions
                 </button>
             </div>
 
@@ -99,35 +122,45 @@ export default function Actions() {
                     <button className={`pd-filter-chip ${statusFilter === 'failure' ? 'active' : ''}`} onClick={() => setStatusFilter('failure')}>
                         <XCircle size={10} /> {statusCounts.failure} Failed
                     </button>
-                    <button className={`pd-filter-chip ${statusFilter === 'running' ? 'active' : ''}`} onClick={() => setStatusFilter('running')}>
-                        <Clock size={10} /> {statusCounts.running} Running
+                    <button className={`pd-filter-chip ${statusFilter === 'in_progress' ? 'active' : ''}`} onClick={() => setStatusFilter('in_progress')}>
+                        <RefreshCw size={10} /> {statusCounts.running} Running
                     </button>
                 </div>
             </div>
 
-            <div className="actions-list">
-                <div className="actions-list-header">
-                    <span>{filtered.length} workflow runs</span>
+            {error && <div className="dash-error">{error}</div>}
+
+            {loading ? (
+                <div className="dash-loading" style={{ marginTop: 20 }}>
+                    <Loader className="spinner" size={24} style={{ animation: 'spin 1s linear infinite' }} />
                 </div>
-                {filtered.length === 0 && <div className="issues-empty">No workflow runs match your filters.</div>}
-                {filtered.map(run => (
-                    <div key={run.id} className="action-row">
-                        <div className={`action-status-icon ${STATUS_CLASS[run.status]}`}>
-                            {STATUS_ICON[run.status]}
-                        </div>
-                        <div className="action-body">
-                            <div className="action-title">{run.title}</div>
-                            <div className="action-commit-msg">{run.commitMsg}</div>
-                        </div>
-                        <div className="action-right">
-                            <span className="action-workflow">{run.workflow}</span>
-                            <span className="action-branch">{run.branch}</span>
-                            <span className="action-duration"><Timer size={12} /> {run.duration}</span>
-                            <span className="action-time">{run.time}</span>
-                        </div>
+            ) : (
+                <div className="actions-list">
+                    <div className="actions-list-header">
+                        <span>{filtered.length} workflow runs</span>
                     </div>
-                ))}
-            </div>
+                    {filtered.length === 0 && <div className="issues-empty">No workflow runs match your filters.</div>}
+                    {filtered.map(run => {
+                        const s = getStatusStr(run);
+                        return (
+                            <div key={run.id} className="action-row" onClick={() => window.open(run.html_url, '_blank')} style={{ cursor: 'pointer' }}>
+                                <div className={`action-status-icon ${STATUS_CLASS[s] || 'action-status-skipped'}`}>
+                                    {STATUS_ICON[s] || <Circle size={16} />}
+                                </div>
+                                <div className="action-body">
+                                    <div className="action-title">{run.name}</div>
+                                    <div className="action-commit-msg">{run.head_commit.message}</div>
+                                </div>
+                                <div className="action-right">
+                                    <span className="action-branch">{run.head_branch}</span>
+                                    <span className="action-time">{timeAgo(run.created_at)}</span>
+                                    <img src={run.actor.avatar_url} alt={run.actor.login} style={{ width: 20, height: 20, borderRadius: '50%' }} />
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }

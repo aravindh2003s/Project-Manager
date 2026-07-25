@@ -1,58 +1,67 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-    GitPullRequest, GitMerge, Search, X, CheckCircle, XCircle,
-    ArrowRight, MessageSquare, Plus
+    GitPullRequest, GitMerge, Search, X, CheckCircle,
+    ArrowRight, Plus, Loader
 } from 'lucide-react';
-
-interface PullRequest {
-    id: string;
-    title: string;
-    number: number;
-    status: 'open' | 'merged' | 'closed';
-    author: string;
-    baseBranch: string;
-    headBranch: string;
-    reviewStatus: 'approved' | 'pending' | 'changes_requested';
-    comments: number;
-    checksPass: boolean;
-    createdAt: string;
-    assigneeInitial: string;
-}
-
-const MOCK_PRS: PullRequest[] = [
-    { id: '1', title: 'feat: Add drag-and-drop kanban board', number: 42, status: 'open', author: 'Demo User', baseBranch: 'main', headBranch: 'feat/kanban', reviewStatus: 'approved', comments: 5, checksPass: true, createdAt: '2 hours ago', assigneeInitial: 'D' },
-    { id: '2', title: 'fix: Resolve task deletion race condition', number: 41, status: 'open', author: 'Demo User', baseBranch: 'main', headBranch: 'fix/delete-race', reviewStatus: 'pending', comments: 2, checksPass: true, createdAt: '5 hours ago', assigneeInitial: 'D' },
-    { id: '3', title: 'feat: Implement global search with Cmd+K', number: 40, status: 'merged', author: 'Demo User', baseBranch: 'main', headBranch: 'feat/search', reviewStatus: 'approved', comments: 8, checksPass: true, createdAt: '1 day ago', assigneeInitial: 'D' },
-    { id: '4', title: 'chore: Update dependencies and fix security vulnerabilities', number: 39, status: 'merged', author: 'Demo User', baseBranch: 'main', headBranch: 'chore/deps', reviewStatus: 'approved', comments: 1, checksPass: true, createdAt: '2 days ago', assigneeInitial: 'D' },
-    { id: '5', title: 'feat: Add CI/CD pipeline visualization', number: 38, status: 'open', author: 'Demo User', baseBranch: 'main', headBranch: 'feat/pipelines', reviewStatus: 'changes_requested', comments: 12, checksPass: false, createdAt: '3 days ago', assigneeInitial: 'D' },
-    { id: '6', title: 'refactor: Migrate store to Zustand v5', number: 37, status: 'closed', author: 'Demo User', baseBranch: 'main', headBranch: 'refactor/zustand', reviewStatus: 'pending', comments: 3, checksPass: true, createdAt: '5 days ago', assigneeInitial: 'D' },
-    { id: '7', title: 'fix: Sprint date calculation timezone issue', number: 36, status: 'merged', author: 'Demo User', baseBranch: 'main', headBranch: 'fix/timezone', reviewStatus: 'approved', comments: 0, checksPass: true, createdAt: '1 week ago', assigneeInitial: 'D' },
-];
-
-const REVIEW_MAP: Record<string, { label: string; className: string }> = {
-    approved: { label: 'Approved', className: 'pr-review-approved' },
-    pending: { label: 'Review pending', className: 'pr-review-pending' },
-    changes_requested: { label: 'Changes requested', className: 'pr-review-changes' },
-};
+import { fetchGithubPullRequests } from '../api/github';
+import type { GitHubPullRequest } from '../api/github';
 
 export default function PullRequests() {
+    const [repo, setRepo] = useState('facebook/react');
     const [tab, setTab] = useState<'open' | 'closed'>('open');
     const [search, setSearch] = useState('');
+    const [prs, setPrs] = useState<GitHubPullRequest[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const openPRs = MOCK_PRS.filter(pr => pr.status === 'open');
-    const closedPRs = MOCK_PRS.filter(pr => pr.status !== 'open');
+    useEffect(() => {
+        const load = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const data = await fetchGithubPullRequests(repo);
+                setPrs(data);
+            } catch (err: any) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+        const debounce = setTimeout(load, 500);
+        return () => clearTimeout(debounce);
+    }, [repo]);
 
+    const openPRs = prs.filter(pr => pr.state === 'open');
+    const closedPRs = prs.filter(pr => pr.state !== 'open');
     const currentList = tab === 'open' ? openPRs : closedPRs;
 
     const filtered = currentList.filter(pr =>
-        !search || pr.title.toLowerCase().includes(search.toLowerCase()) || pr.headBranch.includes(search.toLowerCase())
+        !search || pr.title.toLowerCase().includes(search.toLowerCase()) || pr.head.ref.includes(search.toLowerCase())
     );
+
+    const timeAgo = (dateStr: string) => {
+        const diff = Date.now() - new Date(dateStr).getTime();
+        const hours = Math.floor(diff / 3600000);
+        if (hours < 24) return `${hours} hours ago`;
+        return `${Math.floor(hours / 24)} days ago`;
+    };
 
     return (
         <div className="pulls-page">
             <div className="pulls-header">
-                <h1>Pull Requests</h1>
-                <button className="btn btn-primary" id="newPRBtn" title="New Pull Request">
+                <div>
+                    <h1>Pull Requests</h1>
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: 8, gap: 8 }}>
+                        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Repository:</span>
+                        <input 
+                            value={repo} 
+                            onChange={e => setRepo(e.target.value)} 
+                            className="dash-search-input" 
+                            style={{ padding: '4px 8px', width: 200, fontSize: 13 }}
+                        />
+                    </div>
+                </div>
+                <button className="btn btn-primary" id="newPRBtn" title="New Pull Request" onClick={() => window.open(`https://github.com/${repo}/pulls`, '_blank')}>
                     <Plus size={16} /> New Pull Request
                 </button>
             </div>
@@ -86,45 +95,46 @@ export default function PullRequests() {
                 <span className="issues-count">{filtered.length} results</span>
             </div>
 
-            <div className="issues-list">
-                <div className="issues-list-header">
-                    <span><GitPullRequest size={12} /> {filtered.length} {tab}</span>
+            {error && <div className="dash-error">{error}</div>}
+
+            {loading ? (
+                <div className="dash-loading" style={{ marginTop: 20 }}>
+                    <Loader className="spinner" size={24} style={{ animation: 'spin 1s linear infinite' }} />
                 </div>
-                {filtered.length === 0 && <div className="issues-empty">No pull requests found.</div>}
-                {filtered.map(pr => (
-                    <div key={pr.id} className="pr-row">
-                        <div className={`pr-icon ${pr.status === 'open' ? 'pr-icon-open' : pr.status === 'merged' ? 'pr-icon-merged' : 'pr-icon-closed'}`}>
-                            {pr.status === 'merged' ? <GitMerge size={16} /> : pr.status === 'closed' ? <XCircle size={16} /> : <GitPullRequest size={16} />}
-                        </div>
-                        <div className="pr-body">
-                            <div>
-                                <span className="pr-title-link">{pr.title}</span>
-                                <span className="pr-branches">
-                                    <span className="pr-branch">{pr.headBranch}</span>
-                                    <ArrowRight size={10} className="pr-arrow" />
-                                    <span className="pr-branch">{pr.baseBranch}</span>
-                                </span>
-                            </div>
-                            <div className="pr-meta">
-                                <span>#{pr.number} opened {pr.createdAt} by {pr.author}</span>
-                                <span className="pr-checks">
-                                    {pr.checksPass ? <CheckCircle size={12} className="pr-check-pass" /> : <XCircle size={12} className="pr-check-fail" />}
-                                    {pr.checksPass ? 'Checks pass' : 'Checks failing'}
-                                </span>
-                            </div>
-                        </div>
-                        <div className="pr-right">
-                            <span className={`pr-review-status ${REVIEW_MAP[pr.reviewStatus].className}`}>
-                                {REVIEW_MAP[pr.reviewStatus].label}
-                            </span>
-                            {pr.comments > 0 && (
-                                <span className="issue-comments"><MessageSquare size={12} /> {pr.comments}</span>
-                            )}
-                            <div className="issue-assignee">{pr.assigneeInitial}</div>
-                        </div>
+            ) : (
+                <div className="issues-list">
+                    <div className="issues-list-header">
+                        <span><GitPullRequest size={12} /> {filtered.length} {tab}</span>
                     </div>
-                ))}
-            </div>
+                    {filtered.length === 0 && <div className="issues-empty">No pull requests found.</div>}
+                    {filtered.map(pr => (
+                        <div key={pr.id} className="pr-row" onClick={() => window.open(pr.html_url, '_blank')} style={{ cursor: 'pointer' }}>
+                            <div className={`pr-icon ${pr.state === 'open' ? 'pr-icon-open' : 'pr-icon-closed'}`}>
+                                {pr.state === 'open' ? <GitPullRequest size={16} /> : <GitMerge size={16} />}
+                            </div>
+                            <div className="pr-body">
+                                <div>
+                                    <span className="pr-title-link">{pr.title}</span>
+                                    <span className="pr-branches">
+                                        <span className="pr-branch">{pr.head.ref}</span>
+                                        <ArrowRight size={10} className="pr-arrow" />
+                                        <span className="pr-branch">{pr.base.ref}</span>
+                                    </span>
+                                </div>
+                                <div className="pr-meta">
+                                    <span>#{pr.number} opened {timeAgo(pr.created_at)} by {pr.user.login}</span>
+                                </div>
+                            </div>
+                            <div className="pr-right">
+                                {pr.draft && <span className="pr-review-status pr-review-pending">Draft</span>}
+                                <div className="issue-assignee">
+                                    <img src={pr.user.avatar_url} alt={pr.user.login} style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
