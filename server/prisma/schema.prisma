@@ -23,6 +23,7 @@ model User {
   emailNotifications Boolean @default(true)
   pushNotifications  Boolean @default(false)
   twoFactorEnabled   Boolean @default(false)
+  role      String   @default("USER") // ADMIN, DEVOPS, DEVELOPER, VIEWER, USER
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -31,6 +32,8 @@ model User {
   assignedTasks    Task[]      @relation("AssignedTo")
   createdTasks     Task[]      @relation("CreatedBy")
   createdPipelines Pipeline[]  @relation("CreatedBy")
+  triggeredRuns    PipelineRun[] @relation("TriggeredBy")
+  auditLogs        AuditLog[]  @relation("AuditUser")
 }
 
 model Workspace {
@@ -117,5 +120,54 @@ model Pipeline {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  
+  runs        PipelineRun[]
 }
 
+model PipelineRun {
+  id          String   @id @default(uuid())
+  status      String   @default("QUEUED") // QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELLED
+  startedAt   DateTime?
+  completedAt DateTime?
+  durationMs  Int?
+
+  pipelineId  String
+  pipeline    Pipeline @relation(fields: [pipelineId], references: [id])
+  
+  triggeredById String
+  triggeredBy   User     @relation(name: "TriggeredBy", fields: [triggeredById], references: [id])
+
+  logs        ExecutionLog[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ExecutionLog {
+  id          String   @id @default(uuid())
+  nodeId      String   // ID from the React Flow node
+  status      String   // RUNNING, SUCCEEDED, FAILED
+  message     String
+  output      String?  // The actual stdout/stderr
+  startedAt   DateTime?
+  completedAt DateTime?
+  durationMs  Int?
+
+  runId       String
+  run         PipelineRun @relation(fields: [runId], references: [id])
+
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String   // e.g., "PIPELINE_CREATED", "USER_DELETED"
+  entityType  String   // e.g., "Pipeline", "User"
+  entityId    String
+  details     String?  // JSON string
+  
+  userId      String
+  user        User     @relation(name: "AuditUser", fields: [userId], references: [id])
+  
+  createdAt   DateTime @default(now())
+}

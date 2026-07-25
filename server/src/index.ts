@@ -7,6 +7,10 @@ import projectRoutes from './routes/projectRoutes';
 import gitRoutes from './routes/gitRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import authRoutes from './routes/authRoutes';
+import pipelineRoutes from './routes/pipelineRoutes';
+import pipelineRunRoutes from './routes/pipelineRunRoutes';
+import { errorHandler } from './middleware/errorHandler';
+import { logger } from './utils/logger';
 
 dotenv.config();
 
@@ -20,12 +24,12 @@ const io = new Server(httpServer, {
 app.set('io', io);
 
 io.on('connection', (socket) => {
-    console.log('Socket client connected:', socket.id);
+    logger.info(`Socket client connected: ${socket.id}`);
     socket.on('join_project', (projectId) => {
         socket.join(projectId);
     });
     socket.on('disconnect', () => {
-        console.log('Socket client disconnected:', socket.id);
+        logger.info(`Socket client disconnected: ${socket.id}`);
     });
 });
 
@@ -36,6 +40,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/git', gitRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/pipeline', pipelineRoutes);
+app.use('/api/pipelines', pipelineRunRoutes);
 
 // Temporary seed route
 app.post('/seed', async (req, res) => {
@@ -83,6 +89,8 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', message: 'PMS Server is running' });
 });
 
+app.use(errorHandler);
+
 httpServer.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
+    logger.info(`Server running on http://localhost:${port}`);
 });

@@ -13,7 +13,6 @@ import Discussions from './pages/Discussions';
 import Actions from './pages/Actions';
 import RepositoryViewer from './pages/RepositoryViewer';
 import PipelineBuilder from './pages/PipelineBuilder';
-import CustomDashboard from './pages/CustomDashboard';
 import UploadProject from './pages/UploadProject';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -36,7 +35,6 @@ function App() {
           {/* New Feature Routes */}
           <Route path="repo" element={<RepositoryViewer />} />
           <Route path="pipeline" element={<PipelineBuilder />} />
-          <Route path="my-dashboard" element={<CustomDashboard />} />
           <Route path="upload" element={<UploadProject />} />
         </Route>
       </Routes>

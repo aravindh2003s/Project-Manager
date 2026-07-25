@@ -109,7 +109,8 @@ export const useProjectStore = create<ProjectState>()(
             fetchProjects: async () => {
                 set({ loading: true, error: null });
                 try {
-                    const data = await apiFetch<Project[]>('/projects');
+                    const res = await apiFetch<{data: Project[], meta: any}>('/projects');
+                    const data = Array.isArray(res) ? res : res.data;
                     set({ projects: data, loading: false });
                 } catch (error) {
                     set({ loading: false, error: error instanceof Error ? error.message : 'Failed to fetch projects' });
@@ -266,7 +267,8 @@ export const useProjectStore = create<ProjectState>()(
             
             fetchPipelines: async (projectId: string) => {
                 try {
-                    return await apiFetch<Pipeline[]>(`/projects/${projectId}/pipelines`);
+                    const res = await apiFetch<{data: Pipeline[], meta: any}>(`/projects/${projectId}/pipelines`);
+                    return Array.isArray(res) ? res : res.data;
                 } catch (error) {
                     console.error('Failed to fetch pipelines', error);
                     return [];

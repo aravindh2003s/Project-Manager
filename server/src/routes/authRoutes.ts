@@ -36,7 +36,7 @@ router.post('/register', async (req, res) => {
             },
         });
 
-        const token = createSession(user.id);
+        const token = createSession(user.id, user.role);
         res.status(201).json({ token, user: serializeUser(user) });
     } catch (error) {
         res.status(500).json({ error: 'Failed to create account' });
@@ -55,7 +55,7 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
-        const token = createSession(user.id);
+        const token = createSession(user.id, user.role);
         res.json({ token, user: serializeUser(user) });
     } catch (error) {
         res.status(500).json({ error: 'Failed to sign in' });

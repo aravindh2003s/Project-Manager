@@ -42,6 +42,13 @@ function ProjectDetails() {
     const [availableCommits, setAvailableCommits] = useState<any[]>([]);
     const [editTaskCommitOids, setEditTaskCommitOids] = useState<string[]>([]);
     
+    // Pipelines State
+    const [pipelineRuns, setPipelineRuns] = useState<any[]>([]);
+    const [isPipelinesLoading, setIsPipelinesLoading] = useState(false);
+    const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+    const [executionLogs, setExecutionLogs] = useState<any[]>([]);
+    const [isLogsLoading, setIsLogsLoading] = useState(false);
+    
     // Diff Viewer State
     const [viewingDiffOid, setViewingDiffOid] = useState<string | null>(null);
     const [diffPatch, setDiffPatch] = useState<string>('');
@@ -68,6 +75,37 @@ function ProjectDetails() {
     }, [editTask, currentProject]);
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+    useEffect(() => {
+        if (activeTab === 'pipelines' && projectId) {
+            fetchPipelineRuns();
+        }
+    }, [activeTab, projectId]);
+
+    const fetchPipelineRuns = async () => {
+        setIsPipelinesLoading(true);
+        try {
+            const res = await apiFetch<any[]>(`/pipelines/runs?project=${projectId}`);
+            setPipelineRuns(res);
+        } catch (e) {
+            console.error('Failed to fetch pipeline runs', e);
+        } finally {
+            setIsPipelinesLoading(false);
+        }
+    };
+
+    const handleViewLogs = async (runId: string) => {
+        setSelectedRunId(runId);
+        setIsLogsLoading(true);
+        try {
+            const res = await apiFetch<any[]>(`/pipelines/runs/${runId}/logs`);
+            setExecutionLogs(res);
+        } catch (e) {
+            console.error('Failed to fetch execution logs', e);
+        } finally {
+            setIsLogsLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (projectId) {
@@ -339,10 +377,23 @@ function ProjectDetails() {
                     <div className="card sprint-card">
                         <h3 className="sprint-card-title">CI/CD Pipelines</h3>
                         <div className="commit-list">
-                            <PipelineItem name="Build & Test" status="success" time="10 min ago" duration="2m 30s" branch="main" />
-                            <PipelineItem name="Deploy to Staging" status="success" time="15 min ago" duration="4m 10s" branch="main" />
-                            <PipelineItem name="E2E Tests" status="failed" time="1 hour ago" duration="5m 00s" branch="feat/tasks" />
-                            <PipelineItem name="Deploy to Production" status="running" time="Just now" duration="—" branch="main" />
+                            {isPipelinesLoading ? (
+                                <div className="text-sm text-muted">Loading pipelines...</div>
+                            ) : pipelineRuns.length === 0 ? (
+                                <div className="text-sm text-muted">No pipeline runs found.</div>
+                            ) : (
+                                pipelineRuns.map(run => (
+                                    <PipelineItem 
+                                        key={run.id}
+                                        name={run.pipeline?.name || 'Unknown Pipeline'} 
+                                        status={run.status.toLowerCase()} 
+                                        time={new Date(run.createdAt).toLocaleString()} 
+                                        duration={run.durationMs ? `${Math.round(run.durationMs / 1000)}s` : '—'} 
+                                        branch={run.triggeredBy?.name || 'System'}
+                                        onClick={() => handleViewLogs(run.id)}
+                                    />
+                                ))
+                            )}
                         </div>
                     </div>
                 )}
@@ -455,6 +506,36 @@ function ProjectDetails() {
                     onClose={() => setViewingDiffOid(null)} 
                 />
             )}
+
+            {selectedRunId && (
+                <div className="modal-overlay" onClick={() => setSelectedRunId(null)}>
+                    <div className="card modal-card modal-lg" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Execution Logs</h3>
+                            <button className="modal-close btn" title="Close" onClick={() => setSelectedRunId(null)}><X size={18} /></button>
+                        </div>
+                        <div style={{ background: '#0d1117', padding: '16px', borderRadius: '8px', minHeight: '300px', maxHeight: '500px', overflowY: 'auto', fontFamily: 'monospace', fontSize: '13px', color: '#c9d1d9' }}>
+                            {isLogsLoading ? (
+                                <div>Loading logs...</div>
+                            ) : executionLogs.length === 0 ? (
+                                <div>No execution logs available for this run.</div>
+                            ) : (
+                                executionLogs.map((log, idx) => (
+                                    <div key={idx} style={{ marginBottom: '8px' }}>
+                                        <div style={{ color: '#8b949e', fontSize: '11px', marginBottom: '2px' }}>[{new Date(log.createdAt).toISOString()}] {log.status} ({log.nodeId})</div>
+                                        <div style={{ color: log.status === 'FAILED' ? '#ff7b72' : log.status === 'SUCCEEDED' ? '#3fb950' : '#c9d1d9' }}>{log.message}</div>
+                                        {log.output && (
+                                            <pre style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', marginTop: '4px', borderRadius: '4px', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                                                {log.output}
+                                            </pre>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -473,15 +554,15 @@ function CommitItem({ message, author, hash, time, branch }: { message: string, 
     );
 }
 
-function PipelineItem({ name, status, time, duration, branch }: { name: string, status: string, time: string, duration: string, branch: string }) {
-    const statusClass = status === 'success' ? 'bg-success' : status === 'failed' ? 'bg-danger' : 'bg-warning';
+function PipelineItem({ name, status, time, duration, branch, onClick }: { name: string, status: string, time: string, duration: string, branch: string, onClick?: () => void }) {
+    const statusClass = status === 'success' || status === 'succeeded' ? 'bg-success' : status === 'failed' ? 'bg-danger' : 'bg-warning';
     return (
-        <div className="pipeline-item">
+        <div className="pipeline-item" onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
             <div className="pipeline-status">
                 <div className={`pipeline-dot ${statusClass} ${status === 'running' ? 'pipeline-dot-pulse' : ''}`}></div>
                 <div>
                     <div className="pipeline-name">{name}</div>
-                    <div className="text-sm text-muted">{time} · <span className="commit-branch">{branch}</span></div>
+                    <div className="text-sm text-muted">{time} · Triggered by: <span className="commit-branch">{branch}</span></div>
                 </div>
             </div>
             <div className="pipeline-right">

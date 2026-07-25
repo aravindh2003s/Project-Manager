@@ -8,7 +8,9 @@ const multer_1 = __importDefault(require("multer"));
 const adm_zip_1 = __importDefault(require("adm-zip"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const auth_1 = require("../auth");
 const router = (0, express_1.Router)();
+router.use(auth_1.requireAuth);
 // ── Upload directory ─────────────────────────────────
 const UPLOADS_DIR = path_1.default.resolve(__dirname, '../../uploads');
 if (!fs_1.default.existsSync(UPLOADS_DIR))
@@ -86,6 +88,38 @@ router.post('/', upload.single('project'), async (req, res) => {
             }
         }
         const projectName = path_1.default.basename(projectDir);
+        // CREATE KANBAN PROJECT IN DATABASE
+        const user = res.locals.user;
+        if (user) {
+            // Find or create a default workspace for the user
+            let workspace = await auth_1.prisma.workspace.findFirst({
+                where: { ownerId: user.id }
+            });
+            if (!workspace) {
+                workspace = await auth_1.prisma.workspace.create({
+                    data: {
+                        name: 'Personal Projects',
+                        ownerId: user.id,
+                        members: { create: { userId: user.id, role: 'ADMIN' } }
+                    }
+                });
+            }
+            // Create the new Kanban project to show up on the Dashboard
+            await auth_1.prisma.project.create({
+                data: {
+                    name: projectName,
+                    description: 'Imported from ZIP upload',
+                    workspaceId: workspace.id,
+                    columns: {
+                        create: [
+                            { name: 'To Do', order: 0 },
+                            { name: 'In Progress', order: 1 },
+                            { name: 'Done', order: 2 }
+                        ]
+                    }
+                }
+            });
+        }
         res.json({
             success: true,
             name: projectName,

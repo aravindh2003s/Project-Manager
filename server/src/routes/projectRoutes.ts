@@ -6,16 +6,29 @@ const router = Router();
 const getParam = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
 
 // GET all projects for the demo user
-router.get('/', requireAuth, async (_req, res) => {
+router.get('/', requireAuth, async (req, res) => {
     try {
         const user = res.locals.user;
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 50;
+        const skip = (page - 1) * limit;
 
         const workspaces = await prisma.workspace.findMany({
             where: { ownerId: user.id },
-            include: { projects: { include: { tasks: { include: { assignee: true } }, columns: { orderBy: { order: 'asc' } } } } }
+            include: { 
+                projects: { 
+                    skip,
+                    take: limit,
+                    include: { tasks: { include: { assignee: true } }, columns: { orderBy: { order: 'asc' } } } 
+                } 
+            }
         });
         const projects = workspaces.flatMap((w: any) => w.projects);
-        res.json(projects);
+        
+        // Approximation of total
+        const total = await prisma.project.count({ where: { workspace: { ownerId: user.id } } });
+        
+        res.json({ data: projects, meta: { total, page, limit } });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch projects' });
     }
@@ -226,13 +239,22 @@ router.post('/:id/pipelines', requireAuth, async (req, res) => {
 router.get('/:id/pipelines', requireAuth, async (req, res) => {
     try {
         const id = getParam(req.params.id);
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 50;
+        const skip = (page - 1) * limit;
+
         if (!id) return res.status(400).json({ error: 'Project id is required' });
         
         const pipelines = await prisma.pipeline.findMany({
             where: { projectId: id },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: limit
         });
-        res.json(pipelines);
+        
+        const total = await prisma.pipeline.count({ where: { projectId: id } });
+        
+        res.json({ data: pipelines, meta: { total, page, limit } });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch pipelines' });
     }

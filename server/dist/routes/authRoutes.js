@@ -32,7 +32,7 @@ router.post('/register', async (req, res) => {
                 },
             },
         });
-        const token = (0, auth_1.createSession)(user.id);
+        const token = (0, auth_1.createSession)(user.id, user.role);
         res.status(201).json({ token, user: (0, auth_1.serializeUser)(user) });
     }
     catch (error) {
@@ -49,7 +49,7 @@ router.post('/login', async (req, res) => {
         if (!user || !(0, auth_1.verifyPassword)(password, user.password)) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
-        const token = (0, auth_1.createSession)(user.id);
+        const token = (0, auth_1.createSession)(user.id, user.role);
         res.json({ token, user: (0, auth_1.serializeUser)(user) });
     }
     catch (error) {

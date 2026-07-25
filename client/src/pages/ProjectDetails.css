@@ -139,9 +139,9 @@
 }
 
 .task-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.2) !important;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+  transform: translateY(-4px) scale(1.02);
+  border-color: rgba(0, 230, 118, 0.4) !important;
+  box-shadow: 0 8px 25px rgba(0, 230, 118, 0.15);
 }
 
 .task-card-dragging {

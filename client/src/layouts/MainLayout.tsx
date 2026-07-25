@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import {
     LayoutDashboard, Folder, AlertCircle, Settings,
     User, Bell, Search, ChevronDown, Plus, Zap,
-    FileText, GitBranch, Code2, Workflow, LayoutGrid, UploadCloud
+    FileText, GitBranch, Code2, Workflow, UploadCloud
 } from 'lucide-react';
 import { useProjectStore } from '../store/projectStore';
 import { useAuthStore } from '../store/authStore';
@@ -104,10 +104,6 @@ function MainLayout() {
                     <NavLink to="/app/pipeline" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : 'nav-item-inactive'}`}>
                         <Workflow size={16} />
                         <span>Pipeline Designer</span>
-                    </NavLink>
-                    <NavLink to="/app/my-dashboard" className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : 'nav-item-inactive'}`}>
-                        <LayoutGrid size={16} />
-                        <span>Custom Dashboard</span>
                     </NavLink>
 
                     {projects.length > 0 && (

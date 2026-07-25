@@ -1,8 +1,9 @@
 import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient, User } from '@prisma/client';
+import jwt from 'jsonwebtoken';
 
-const sessions = new Map<string, string>();
+const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_enterprise_key_change_me';
 
 export const prisma = new PrismaClient();
 
@@ -19,14 +20,15 @@ export function verifyPassword(password: string, storedHash: string) {
     return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(originalHash, 'hex'));
 }
 
-export function createSession(userId: string) {
-    const token = crypto.randomBytes(32).toString('hex');
-    sessions.set(token, userId);
+export function createSession(userId: string, role: string = 'USER') {
+    // Return a JWT instead of a random string in-memory map
+    const token = jwt.sign({ userId, role }, JWT_SECRET, { expiresIn: '7d' });
     return token;
 }
 
 export function destroySession(token: string) {
-    sessions.delete(token);
+    // JWTs are stateless. In a real enterprise system, we might add it to a Redis blacklist.
+    // For now, client just deletes the token.
 }
 
 export function getSessionToken(req: Request) {
@@ -39,15 +41,31 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     const token = getSessionToken(req);
     if (!token) return res.status(401).json({ error: 'Authentication required' });
 
-    const userId = sessions.get(token);
-    if (!userId) return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string, role: string };
+        const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+        if (!user) return res.status(401).json({ error: 'User not found' });
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) return res.status(401).json({ error: 'User not found' });
+        res.locals.user = user;
+        res.locals.sessionToken = token;
+        next();
+    } catch (e) {
+        return res.status(401).json({ error: 'Session expired or invalid. Please sign in again.' });
+    }
+}
 
-    res.locals.user = user;
-    res.locals.sessionToken = token;
-    next();
+// RBAC Middleware
+export function authorize(allowedRoles: string[]) {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const user = res.locals.user as User;
+        if (!user) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        if (!allowedRoles.includes(user.role)) {
+            return res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
+        }
+        next();
+    };
 }
 
 export function serializeUser(user: User) {
@@ -63,6 +81,7 @@ export function serializeUser(user: User) {
         emailNotifications: user.emailNotifications,
         pushNotifications: user.pushNotifications,
         twoFactorEnabled: user.twoFactorEnabled,
+        role: user.role,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
     };

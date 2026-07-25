@@ -4,9 +4,11 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { requireAuth } from '../auth';
 
 const execAsync = promisify(exec);
 const router = Router();
+router.use(requireAuth);
 
 // Default: the project itself. Uploaded repos live in UPLOADS_DIR.
 const DEFAULT_REPO = path.resolve(__dirname, '../../../');

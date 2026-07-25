@@ -10,13 +10,13 @@
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease !important;
 }
 
 .stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-6px);
+  box-shadow: 0 15px 35px rgba(0, 230, 118, 0.15);
+  border-color: rgba(0, 230, 118, 0.4) !important;
 }
 
 .dash-progress-card {
@@ -33,12 +33,12 @@
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease !important;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease !important;
 }
 
 .project-card:hover {
-  transform: translateY(-5px) scale(1.02);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 15px 35px rgba(0, 230, 118, 0.2);
   border-color: var(--accent-color) !important;
 }
 
