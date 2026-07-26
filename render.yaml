@@ -23,8 +23,6 @@ services:
         value: 8080
       - key: JWT_SECRET
         generateValue: true
-      - key: CORS_ORIGIN
-        value: https://project-manager-five-zeta.vercel.app
 
   - type: web
     name: pms-frontend
@@ -38,4 +36,7 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://pms-backend-6fe6.onrender.com
+        fromService:
+          type: web
+          name: pms-backend
+          envVarKey: RENDER_EXTERNAL_URL
