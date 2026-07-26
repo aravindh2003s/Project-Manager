@@ -24,4 +24,4 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN
-        value: https://my-pms-client.vercel.app # TODO: Update this to your deployed frontend URL
+        value: https://project-manager-five-zeta.vercel.app
