@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjectStore, getProjectStats } from '../store/projectStore';
+import type { Project } from '../store/projectStore';
 import { Search, X, Plus, Folder, Star, GitFork, AlertCircle } from 'lucide-react';
+
+const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return 'today';
+    if (days === 1) return 'yesterday';
+    if (days < 30) return `${days} days ago`;
+    return `${Math.floor(days / 30)} months ago`;
+};
 
 export default function Projects() {
     const { projects, loading, fetchProjects, createProject } = useProjectStore();
@@ -32,15 +42,6 @@ export default function Projects() {
             if (sortBy === 'tasks') return b.tasks.length - a.tasks.length;
             return 0;
         });
-
-    const timeAgo = (dateStr: string) => {
-        const diff = Date.now() - new Date(dateStr).getTime();
-        const days = Math.floor(diff / 86400000);
-        if (days === 0) return 'today';
-        if (days === 1) return 'yesterday';
-        if (days < 30) return `${days} days ago`;
-        return `${Math.floor(days / 30)} months ago`;
-    };
 
     return (
         <div className="projects-page">
@@ -94,7 +95,7 @@ export default function Projects() {
             ) : (
                 <div className="projects-list">
                     {filtered.map(project => {
-                        const stats = getProjectStats(project as any);
+                        const stats = getProjectStats(project as Project);
                         const todoCount = stats.todo;
                         const inProgressCount = stats.inProgress;
                         const openIssues = todoCount + inProgressCount;

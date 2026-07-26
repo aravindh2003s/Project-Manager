@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useProjectStore } from '../store/projectStore';
 import type { Task } from '../store/projectStore';
@@ -76,13 +76,7 @@ function ProjectDetails() {
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-    useEffect(() => {
-        if (activeTab === 'pipelines' && projectId) {
-            fetchPipelineRuns();
-        }
-    }, [activeTab, projectId]);
-
-    const fetchPipelineRuns = async () => {
+    const fetchPipelineRuns = useCallback(async () => {
         setIsPipelinesLoading(true);
         try {
             const res = await apiFetch<any[]>(`/pipelines/runs?project=${projectId}`);
@@ -92,7 +86,13 @@ function ProjectDetails() {
         } finally {
             setIsPipelinesLoading(false);
         }
-    };
+    }, [projectId]);
+
+    useEffect(() => {
+        if (activeTab === 'pipelines' && projectId) {
+            fetchPipelineRuns();
+        }
+    }, [activeTab, projectId, fetchPipelineRuns]);
 
     const handleViewLogs = async (runId: string) => {
         setSelectedRunId(runId);

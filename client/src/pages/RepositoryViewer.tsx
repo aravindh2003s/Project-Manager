@@ -8,6 +8,16 @@ import {
 import { gitApi } from '../api/gitApi';
 import type { FileTreeItem, Commit, RepoInfo, DiffLine } from '../api/gitApi';
 
+const formatTime = (ts: number) => {
+    const d = new Date(ts * 1000);
+    const diff = Date.now() - d.getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return 'today';
+    if (days === 1) return 'yesterday';
+    if (days < 30) return `${days}d ago`;
+    return d.toLocaleDateString();
+};
+
 // ── File Icon helper ────────────────────────────────
 function getFileIcon(name: string) {
     const ext = name.split('.').pop()?.toLowerCase() || '';
@@ -41,7 +51,9 @@ function TreeNode({ item, depth, selectedPath, onSelect }: TreeNodeProps) {
                 try {
                     const result = await gitApi.getTree(item.path);
                     setChildren(result.items);
-                } catch { }
+                } catch {
+                    // Ignore empty catch
+                }
                 setLoadingChildren(false);
             }
             setExpanded(!expanded);
@@ -139,10 +151,6 @@ export default function RepositoryViewer() {
     const [isDirty, setIsDirty] = useState(false);
     const [loadingFile, setLoadingFile] = useState(false);
 
-    useEffect(() => {
-        loadInitialData();
-    }, []);
-
     const loadInitialData = async () => {
         setLoading(true);
         try {
@@ -163,6 +171,15 @@ export default function RepositoryViewer() {
         setLoading(false);
     };
 
+    useEffect(() => {
+        let mounted = true;
+        Promise.resolve().then(() => {
+            if (mounted) loadInitialData();
+        });
+        return () => { mounted = false; };
+    }, []);
+
+
     const handleFileSelect = useCallback(async (filePath: string, isDir: boolean) => {
         if (isDir) { setSelectedPath(filePath); return; }
         setSelectedPath(filePath);
@@ -174,7 +191,7 @@ export default function RepositoryViewer() {
             setFileContent(file.content);
             setEditorContent(file.content);
             setFileLang(file.language);
-        } catch (e) {
+        } catch {
             setFileContent('// Error loading file');
             setEditorContent('// Error loading file');
         }
@@ -205,16 +222,6 @@ export default function RepositoryViewer() {
         } catch {
             setDiffLines([]);
         }
-    };
-
-    const formatTime = (ts: number) => {
-        const d = new Date(ts * 1000);
-        const diff = Date.now() - d.getTime();
-        const days = Math.floor(diff / 86400000);
-        if (days === 0) return 'today';
-        if (days === 1) return 'yesterday';
-        if (days < 30) return `${days}d ago`;
-        return d.toLocaleDateString();
     };
 
 

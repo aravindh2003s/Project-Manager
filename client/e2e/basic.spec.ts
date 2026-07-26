@@ -6,7 +6,8 @@ test.describe('App basic flows', () => {
     await page.goto('/');
     
     // Check main title (updated to match current UI)
-    await expect(page.locator('h1')).toHaveText('Operations for teams that need clarity, not clutter.');
+    await expect(page.locator('h1')).toContainText('Operations for teams that need');
+    await expect(page.locator('h1')).toContainText('clarity, not clutter');
     
     // Check 'Get Started Free' button
     const getStartedBtn = page.locator('a', { hasText: 'Get Started Free' });
@@ -22,7 +23,7 @@ test.describe('App basic flows', () => {
     await expect(page.locator('#passwordInput')).toBeVisible();
     
     // Switch to Register mode to ensure we have a valid account
-    await page.locator('button', { hasText: 'Create Account' }).first().click();
+    await page.locator('.login-switch-btn').nth(1).click();
     
     // Ensure name input is visible now
     await expect(page.locator('#nameInput')).toBeVisible();

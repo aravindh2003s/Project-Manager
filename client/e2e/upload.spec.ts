@@ -5,7 +5,7 @@ test.describe('Upload Project Integration', () => {
     test('Uploading a zip automatically creates a Kanban project', async ({ page }) => {
         // 1. Register a fresh account
         await page.goto('/login');
-        await page.locator('button', { hasText: 'Create Account' }).first().click();
+        await page.locator('.login-switch-btn').nth(1).click();
         
         await expect(page.locator('#nameInput')).toBeVisible();
         await page.fill('#nameInput', 'Integration Tester');

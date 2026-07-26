@@ -53,7 +53,7 @@ export default function UploadProject() {
         } finally {
             setLoadingList(false);
         }
-    }, []);
+    }, [token]);
 
     useEffect(() => { fetchList(); }, [fetchList]);
 
@@ -93,9 +93,9 @@ export default function UploadProject() {
             const data = await res.json();
             setLastUploaded(data);
             await fetchList();
-        } catch (e: any) {
+        } catch (e: unknown) {
             clearInterval(progressInterval);
-            setError(e.message || 'Upload failed');
+            setError(e instanceof Error ? e.message : 'Upload failed');
         } finally {
             setUploading(false);
             setTimeout(() => setUploadProgress(0), 1500);

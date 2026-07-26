@@ -9,7 +9,8 @@ export default defineConfig({
   reporter: 'html',
   use: {
     baseURL: 'http://localhost:5173',
-    trace: 'on-first-retry',
+    trace: 'on',
+    screenshot: 'on',
   },
   projects: [
     {
@@ -18,7 +19,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: 'npm run test:e2e:serve',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
   },

@@ -14,7 +14,7 @@ import { logger } from './utils/logger';
 
 dotenv.config();
 
-const app = express();
+export const app = express();
 const port = process.env.PORT || 3000;
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -91,6 +91,8 @@ app.get('/health', (req, res) => {
 
 app.use(errorHandler);
 
-httpServer.listen(port, () => {
-    logger.info(`Server running on http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+    httpServer.listen(port, () => {
+        logger.info(`Server running on http://localhost:${port}`);
+    });
+}
