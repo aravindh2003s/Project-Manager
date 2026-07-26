@@ -25,3 +25,18 @@ services:
         generateValue: true
       - key: CORS_ORIGIN
         value: https://project-manager-five-zeta.vercel.app
+
+  - type: web
+    name: pms-frontend
+    env: static
+    plan: free
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://pms-backend-6fe6.onrender.com
